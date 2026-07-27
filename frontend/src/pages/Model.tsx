@@ -1,5 +1,6 @@
 import { Link, useParams } from "react-router-dom";
 import { FeatureForm } from "../components/FeatureForm";
+import { ModelIcon } from "../components/ModelIcon";
 import type { ModelInfo } from "../api";
 
 // Страница модели: шапка + форма признаков + результат.
@@ -26,7 +27,7 @@ export function ModelPage({ models }: { models: ModelInfo[] }) {
   return (
     <div className="mx-auto max-w-content px-6 py-12 sm:py-16">
       <div className="mb-8 flex items-start gap-4">
-        <div className="text-5xl">{model.emoji}</div>
+        <ModelIcon name={model.name} className="h-11 w-11 shrink-0 text-ink" />
         <div>
           <h1 className="text-3xl font-semibold capitalize tracking-tight text-ink sm:text-4xl">
             {model.name}

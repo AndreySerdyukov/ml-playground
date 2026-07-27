@@ -59,7 +59,7 @@ export function FeatureForm({ model }: { model: ModelInfo }) {
                   required
                 >
                   <option value="" disabled>
-                    —
+                    Select…
                   </option>
                   {f.choices.map((c) => (
                     <option key={c} value={c}>

@@ -5,7 +5,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
-# Тип задачи модели (uplift моделируем как регрессию — числовой score).
+# Тип задачи модели (uplift моделируем как регрессию – числовой score).
 TaskType = Literal["regression", "classification"]
 
 
@@ -39,7 +39,7 @@ class ModelInfo(BaseModel):
     category: str = ""
     # Единица измерения таргета (для карточки результата).
     target_unit: str | None = None
-    # Заглушка ли это (веса ещё не подставлены) — UI покажет бейдж «demo».
+    # Заглушка ли это (веса ещё не подставлены) – UI покажет бейдж «demo».
     is_stub: bool = False
 
 
@@ -56,5 +56,5 @@ class PredictResponse(BaseModel):
     task: TaskType
     # Предсказание: число (регрессия) или метка класса (классификация).
     prediction: float | str | int
-    # Для классификации — вероятности по классам (если модель их отдаёт).
+    # Для классификации – вероятности по классам (если модель их отдаёт).
     probabilities: dict[str, float] | None = None

@@ -1,6 +1,6 @@
 """Собирает стаб-артефакты 6 табличных моделей для веб-оболочки ML Playground.
 
-Каждый артефакт — `{"model": StubPredictor(...), "meta": ModelInfo(...).model_dump()}`
+Каждый артефакт – `{"model": StubPredictor(...), "meta": ModelInfo(...).model_dump()}`
 в `backend/models/<name>.joblib`. Признаки курированы (чистые лейблы/единицы/примеры),
 чтобы форма выглядела аккуратно. Реальные веса подставим позже, заменив StubPredictor
 обученным estimator'ом с тем же интерфейсом.
@@ -39,7 +39,7 @@ MODELS: list[tuple[ModelInfo, StubPredictor]] = [
             task="classification",
             target="quality",
             category="Classification",
-            emoji="🍷",
+            emoji="",
             is_stub=True,
             description="Predict wine quality (score 3–8) from physicochemical properties.",
             features=[
@@ -65,7 +65,7 @@ MODELS: list[tuple[ModelInfo, StubPredictor]] = [
             target="price",
             target_unit="USD",
             category="Regression",
-            emoji="💎",
+            emoji="",
             is_stub=True,
             description="Estimate a diamond's sale price from its cut, colour and measurements.",
             features=[
@@ -86,7 +86,7 @@ MODELS: list[tuple[ModelInfo, StubPredictor]] = [
             target="price",
             target_unit="USD",
             category="Regression",
-            emoji="🚗",
+            emoji="",
             is_stub=True,
             description="Estimate a used car's price from make, year, mileage and engine.",
             features=[
@@ -107,9 +107,9 @@ MODELS: list[tuple[ModelInfo, StubPredictor]] = [
             target="wage",
             target_unit="log $/hr",
             category="Regression",
-            emoji="💵",
+            emoji="",
             is_stub=True,
-            description="Bayesian wage model — predict hourly wage from experience and schooling.",
+            description="Bayesian wage model – predict hourly wage from experience and schooling.",
             features=[
                 num("Years", "Labour-market experience", 3, "yrs"),
                 num("School", "Years of schooling", 12, "yrs"),
@@ -125,9 +125,9 @@ MODELS: list[tuple[ModelInfo, StubPredictor]] = [
             task="classification",
             target="default risk",
             category="Classification",
-            emoji="🏦",
+            emoji="",
             is_stub=True,
-            description="Credit-default classifier (illustrative fields — source dataset is anonymised).",
+            description="Credit-default classifier (illustrative fields – source dataset is anonymised).",
             features=[
                 num("annual_income", "Annual income", 45000, "USD"),
                 num("loan_amount", "Loan amount", 12000, "USD"),
@@ -145,9 +145,9 @@ MODELS: list[tuple[ModelInfo, StubPredictor]] = [
             task="regression",
             target="uplift score",
             category="Uplift",
-            emoji="📈",
+            emoji="",
             is_stub=True,
-            description="Uplift model — predicted incremental effect of a marketing treatment.",
+            description="Uplift model – predicted incremental effect of a marketing treatment.",
             features=[
                 num("recency", "Days since last purchase", 30, "days"),
                 num("frequency", "Purchases last year", 6),

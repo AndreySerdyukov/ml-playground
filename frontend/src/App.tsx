@@ -29,7 +29,7 @@ export default function App() {
       </main>
       <footer className="border-t border-hair bg-mist">
         <div className="mx-auto max-w-content px-6 py-8 text-xs text-slate">
-          ML Playground — interactive demos of trained models. Weights are illustrative stubs for now.
+          ML Playground – interactive demos of trained models. Weights are illustrative stubs for now.
         </div>
       </footer>
     </div>

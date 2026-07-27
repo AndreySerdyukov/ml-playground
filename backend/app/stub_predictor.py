@@ -26,7 +26,7 @@ class StubPredictor:
         scale: float = 1.0,
     ) -> None:
         self.task = task
-        # Атрибут в стиле sklearn — из него api берёт метки классов.
+        # Атрибут в стиле sklearn – из него api берёт метки классов.
         self.classes_ = list(classes) if classes else None
         self._base = base
         self._scale = scale
@@ -41,7 +41,7 @@ class StubPredictor:
             elif isinstance(value, (int, float)):
                 total += float(value)
             else:
-                # Категориальное — стабильный хэш в небольшой диапазон.
+                # Категориальное – стабильный хэш в небольшой диапазон.
                 total += sum(ord(ch) for ch in str(value)) % 10
         return total
 

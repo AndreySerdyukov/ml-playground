@@ -1,7 +1,7 @@
 """Бизнес-логика инференса. Чистый слой: без импортов FastAPI.
 
 Отвечает за: валидацию набора фич под конкретную модель, сборку строки-признаков
-в правильном порядке колонок и вызов estimator'а. Ошибки — доменные исключения,
+в правильном порядке колонок и вызов estimator'а. Ошибки – доменные исключения,
 которые api-слой транслирует в HTTP-коды.
 """
 from __future__ import annotations
@@ -34,7 +34,7 @@ class InferenceService:
     def predict(self, model_name: str, features: dict[str, object]) -> PredictResponse:
         """Сделать предсказание моделью `model_name` по словарю фич.
 
-        Порядок колонок берём из метаописания модели — pipeline ожидает именно его.
+        Порядок колонок берём из метаописания модели – pipeline ожидает именно его.
         """
         loaded = self._registry.get(model_name)
         if loaded is None:

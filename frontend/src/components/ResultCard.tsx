@@ -52,7 +52,7 @@ export function ResultCard({
       )}
 
       {model.is_stub && (
-        <p className="mt-6 text-xs text-slate">Demo weights — illustrative output.</p>
+        <p className="mt-6 text-xs text-slate">Demo weights – illustrative output.</p>
       )}
     </div>
   );

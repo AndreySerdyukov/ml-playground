@@ -6,7 +6,7 @@ export function Hero() {
         Machine learning, hands-on.
       </h1>
       <p className="mx-auto mt-5 max-w-xl text-lg text-slate sm:text-2xl">
-        Pick a model, enter the inputs, get a prediction — right in your browser.
+        Pick a model, enter the inputs, get a prediction – right in your browser.
       </p>
     </section>
   );
