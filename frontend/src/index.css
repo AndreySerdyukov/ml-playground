@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-white text-ink font-sans antialiased;
+  }
+}
+
+@layer components {
+  /* Стеклянный навбар в стиле Apple. */
+  .glass-nav {
+    background: rgba(251, 251, 253, 0.72);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+  }
+  /* Первичная кнопка-пилюля (чёрная). */
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-full bg-ink px-6 py-3 text-[17px] font-medium text-white transition hover:opacity-90 disabled:opacity-40;
+  }
+  /* Поле ввода. */
+  .field {
+    @apply w-full rounded-xl border border-hair bg-white px-4 py-2.5 text-[15px] text-ink outline-none transition focus:border-ink;
+  }
+}

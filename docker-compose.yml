@@ -1,0 +1,15 @@
+# Локальный запуск всего приложения: backend (FastAPI) + frontend (nginx со статикой).
+services:
+  backend:
+    build: ./backend
+    environment:
+      APP_CORS_ORIGINS: '["http://localhost:3000"]'
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build: ./frontend
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"

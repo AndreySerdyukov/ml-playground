@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node / Vite
+node_modules/
+dist/
+*.local
+
+# Крупные артефакты моделей (грузим через LFS или скрипт скачивания)
+backend/models/*.joblib
+backend/models/*.pt
+backend/models/*.onnx
+
+# Среда и секреты
+.env
+.DS_Store
