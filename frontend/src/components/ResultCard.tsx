@@ -11,7 +11,7 @@ export function ResultCard({
   if (!result) {
     return (
       <div className="flex items-center justify-center rounded-apple bg-mist p-8 text-center text-sm text-slate">
-        Fill in the inputs and hit Predict.
+        Fill in the inputs and hit Predict
       </div>
     );
   }
@@ -52,7 +52,7 @@ export function ResultCard({
       )}
 
       {model.is_stub && (
-        <p className="mt-6 text-xs text-slate">Demo weights – illustrative output.</p>
+        <p className="mt-6 text-xs text-slate">Demo weights – illustrative output</p>
       )}
     </div>
   );

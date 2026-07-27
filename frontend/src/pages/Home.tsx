@@ -32,17 +32,17 @@ export function Home({
           <Feature
             icon="model-agnostic-forms"
             title="Model-agnostic"
-            text="Every input form builds itself from the model's own feature spec."
+            text="Every input form builds itself from the model's own feature spec"
           />
           <Feature
             icon="instant-prediction"
             title="Instant predictions"
-            text="Enter values, get an answer right away, straight in the browser."
+            text="Enter values, get an answer right away, straight in the browser"
           />
           <Feature
             icon="notebook-to-browser"
             title="Notebook to browser"
-            text="Trained models served behind one clean, versionable API."
+            text="Trained models served behind one clean, versionable API"
           />
         </div>
       </section>

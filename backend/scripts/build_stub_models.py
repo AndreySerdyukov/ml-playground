@@ -41,7 +41,7 @@ MODELS: list[tuple[ModelInfo, StubPredictor]] = [
             category="Classification",
             emoji="",
             is_stub=True,
-            description="Predict wine quality (score 3–8) from physicochemical properties.",
+            description="Predict wine quality (score 3–8) from physicochemical properties",
             features=[
                 num("fixed acidity", "Fixed acidity", 7.4, "g/L"),
                 num("volatile acidity", "Volatile acidity", 0.70, "g/L"),
@@ -67,7 +67,7 @@ MODELS: list[tuple[ModelInfo, StubPredictor]] = [
             category="Regression",
             emoji="",
             is_stub=True,
-            description="Estimate a diamond's sale price from its cut, colour and measurements.",
+            description="Estimate a diamond's sale price from its cut, colour and measurements",
             features=[
                 num("size", "Carat", 0.7, "ct"),
                 cat("cut", "Cut", ["Fair", "Good", "Very Good", "Premium", "Ideal"], "Ideal"),
@@ -88,7 +88,7 @@ MODELS: list[tuple[ModelInfo, StubPredictor]] = [
             category="Regression",
             emoji="",
             is_stub=True,
-            description="Estimate a used car's price from make, year, mileage and engine.",
+            description="Estimate a used car's price from make, year, mileage and engine",
             features=[
                 cat("company", "Make", ["Toyota", "BMW", "Mercedes-Benz", "Audi", "Volkswagen", "Ford", "Renault", "Kia"], "Toyota"),
                 num("year", "Year", 2015),
@@ -109,7 +109,7 @@ MODELS: list[tuple[ModelInfo, StubPredictor]] = [
             category="Regression",
             emoji="",
             is_stub=True,
-            description="Bayesian wage model – predict hourly wage from experience and schooling.",
+            description="Bayesian wage model – predict hourly wage from experience and schooling",
             features=[
                 num("Years", "Labour-market experience", 3, "yrs"),
                 num("School", "Years of schooling", 12, "yrs"),
@@ -127,7 +127,7 @@ MODELS: list[tuple[ModelInfo, StubPredictor]] = [
             category="Classification",
             emoji="",
             is_stub=True,
-            description="Credit-default classifier (illustrative fields – source dataset is anonymised).",
+            description="Credit-default classifier (illustrative fields – source dataset is anonymised)",
             features=[
                 num("annual_income", "Annual income", 45000, "USD"),
                 num("loan_amount", "Loan amount", 12000, "USD"),
@@ -147,7 +147,7 @@ MODELS: list[tuple[ModelInfo, StubPredictor]] = [
             category="Uplift",
             emoji="",
             is_stub=True,
-            description="Uplift model – predicted incremental effect of a marketing treatment.",
+            description="Uplift model – predicted incremental effect of a marketing treatment",
             features=[
                 num("recency", "Days since last purchase", 30, "days"),
                 num("frequency", "Purchases last year", 6),
