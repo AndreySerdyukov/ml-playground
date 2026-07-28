@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { predict, type ModelInfo, type PredictResponse } from "../api";
+import { Combobox } from "./Combobox";
 import { ResultCard } from "./ResultCard";
 
 // Значения по умолчанию из примеров модели (форма приходит предзаполненной).
@@ -11,10 +12,11 @@ function initialValues(model: ModelInfo): Record<string, string> {
   return values;
 }
 
-// Форма признаков + результат. Ремоунтится по key={model.name} на странице модели.
+// Одиночный предикт: форма признаков + карточка результата. Ремоунтится по key={model.name}.
 export function FeatureForm({ model }: { model: ModelInfo }) {
   const [values, setValues] = useState<Record<string, string>>(() => initialValues(model));
   const [result, setResult] = useState<PredictResponse | null>(null);
+  const [submitted, setSubmitted] = useState<Record<string, string> | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -26,16 +28,18 @@ export function FeatureForm({ model }: { model: ModelInfo }) {
     event.preventDefault();
     setLoading(true);
     setError(null);
-    setResult(null);
     try {
       const features: Record<string, unknown> = {};
       for (const f of model.features) {
         const raw = values[f.name] ?? "";
         features[f.name] = f.type === "number" ? Number(raw) : raw;
       }
-      setResult(await predict(model.name, features));
+      const res = await predict(model.name, features);
+      setResult(res);
+      setSubmitted({ ...values });
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
+      setResult(null);
     } finally {
       setLoading(false);
     }
@@ -46,27 +50,17 @@ export function FeatureForm({ model }: { model: ModelInfo }) {
       <form onSubmit={onSubmit} className="rounded-apple border border-hair p-6 sm:p-8">
         <div className="grid gap-5 sm:grid-cols-2">
           {model.features.map((f) => (
-            <label key={f.name} className="flex flex-col">
+            <div key={f.name} className="flex flex-col">
               <span className="mb-1.5 text-sm text-slate">
                 {f.label ?? f.name}
                 {f.unit ? `, ${f.unit}` : ""}
               </span>
               {f.type === "category" && f.choices ? (
-                <select
-                  className="field"
+                <Combobox
                   value={values[f.name] ?? ""}
-                  onChange={(e) => set(f.name, e.target.value)}
-                  required
-                >
-                  <option value="" disabled>
-                    Select…
-                  </option>
-                  {f.choices.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(v) => set(f.name, v)}
+                  options={f.choices}
+                />
               ) : (
                 <input
                   type="number"
@@ -77,7 +71,7 @@ export function FeatureForm({ model }: { model: ModelInfo }) {
                   required
                 />
               )}
-            </label>
+            </div>
           ))}
         </div>
 
@@ -97,7 +91,7 @@ export function FeatureForm({ model }: { model: ModelInfo }) {
         {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
       </form>
 
-      <ResultCard model={model} result={result} />
+      <ResultCard model={model} result={result} inputs={submitted} />
     </div>
   );
 }

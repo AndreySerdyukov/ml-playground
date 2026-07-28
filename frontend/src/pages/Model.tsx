@@ -1,5 +1,5 @@
 import { Link, useParams } from "react-router-dom";
-import { FeatureForm } from "../components/FeatureForm";
+import { PredictPanel } from "../components/PredictPanel";
 import { ModelIcon } from "../components/ModelIcon";
 import type { ModelInfo } from "../api";
 
@@ -44,7 +44,7 @@ export function ModelPage({ models }: { models: ModelInfo[] }) {
         </div>
       </div>
 
-      <FeatureForm key={model.name} model={model} />
+      <PredictPanel key={model.name} model={model} />
     </div>
   );
 }

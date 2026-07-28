@@ -6,11 +6,13 @@
 """
 from __future__ import annotations
 
+from typing import Any
+
 import numpy as np
 import pandas as pd
 
 from app.repositories.model_registry import ModelRegistry
-from app.schemas.predict import ModelInfo, PredictResponse
+from app.schemas.predict import BatchPredictResponse, ModelInfo, PredictResponse
 
 
 class ModelNotFoundError(Exception):
@@ -60,6 +62,58 @@ class InferenceService:
 
         value = float(estimator.predict(row)[0])
         return PredictResponse(model_name=model_name, task="regression", prediction=value)
+
+    def predict_batch(
+        self, model_name: str, records: list[dict[str, object]]
+    ) -> BatchPredictResponse:
+        """Предсказание по многим строкам сразу (из загруженного CSV/Excel).
+
+        Возвращает значения фич по строкам + колонку `prediction` (порядок строк сохраняется).
+        Числовые фичи приводятся к числам; пропуски и незнакомые категории покрывает пайплайн.
+        """
+        loaded = self._registry.get(model_name)
+        if loaded is None:
+            raise ModelNotFoundError(model_name)
+        if not records:
+            raise InvalidFeaturesError("Нет строк для предсказания")
+
+        expected = [f.name for f in loaded.info.features]
+        frame = pd.DataFrame(records)
+        missing = [name for name in expected if name not in frame.columns]
+        if missing:
+            raise InvalidFeaturesError(f"В файле не хватает колонок: {', '.join(missing)}")
+
+        rows_in = frame[expected].copy()
+        for feature in loaded.info.features:
+            if feature.type == "number":
+                rows_in[feature.name] = pd.to_numeric(rows_in[feature.name], errors="coerce")
+
+        preds = loaded.estimator.predict(rows_in)
+        is_cls = loaded.info.task == "classification"
+        out_rows: list[dict[str, Any]] = []
+        for i, record in enumerate(rows_in.to_dict("records")):
+            row: dict[str, Any] = {name: self._cell(record[name]) for name in expected}
+            row["prediction"] = self._to_python(preds[i]) if is_cls else round(float(preds[i]), 2)
+            out_rows.append(row)
+
+        return BatchPredictResponse(
+            model_name=model_name,
+            task=loaded.info.task,
+            target=loaded.info.target,
+            target_unit=loaded.info.target_unit,
+            columns=expected,
+            rows=out_rows,
+            count=len(out_rows),
+        )
+
+    @staticmethod
+    def _cell(value: object) -> object:
+        """Скаляр ячейки → JSON-совместимый тип (NaN/пропуск → None)."""
+        if pd.isna(value):
+            return None
+        if isinstance(value, np.generic):
+            return value.item()
+        return value
 
     @staticmethod
     def _extract_proba(estimator: object, row: pd.DataFrame) -> dict[str, float] | None:
