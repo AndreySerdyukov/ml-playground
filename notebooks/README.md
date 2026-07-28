@@ -13,6 +13,10 @@ Source research notebooks behind the trained models, one folder per model.
 - `wine/` – wine-quality (good ≥ 7) classification
   - `ML_Classification_Wine_Selection.ipynb` – EDA, scaler/model grid search
   - `ML_Classification_Wine_Model.ipynb` – final model (notebook used logistic regression)
+- `diamonds/` – diamond price regression
+  - `diamonds_outlier_fix.ipynb` – the outlier-handling lesson: reproduces the flawed IQR-on-target
+    filter (inflates MAPE) vs the correct split-first, clean-only-on-train pipeline (MAPE ≈ 6.9%,
+    beating the group best 7.31%). Source coursework notebooks: `~/personal/ML-projects/Diamonds/`.
 
 The **production** training that ships weights into the app is the standalone script
 `backend/training/<model>.py` (reads `data/<model>/`, writes `backend/models/<model>.joblib`). The

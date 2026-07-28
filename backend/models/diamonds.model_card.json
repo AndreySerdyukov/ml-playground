@@ -1,0 +1,41 @@
+{
+  "name": "diamonds",
+  "task": "regression",
+  "target": "total_sales_price",
+  "estimator": "HistGradientBoostingRegressor (gamma)",
+  "features": [
+    "size",
+    "color",
+    "clarity",
+    "cut",
+    "symmetry",
+    "polish",
+    "depth_percent",
+    "table_percent",
+    "meas_length",
+    "meas_width",
+    "meas_depth"
+  ],
+  "metrics_holdout": {
+    "mape": 0.06915688806470402,
+    "median_ape": 0.05398096094990236,
+    "within_10pct": 0.7822281560599318,
+    "within_15pct": 0.9062453641892895,
+    "within_25pct": 0.9807892004153687,
+    "mae": 188.45995628647822,
+    "max_error": 5749.623049278423
+  },
+  "metrics_external_test": {
+    "mape": 0.06870318767110732,
+    "median_ape": 0.05398435225539671,
+    "within_10pct": 0.7787378078653187,
+    "within_15pct": 0.9071393577695631,
+    "within_25pct": 0.9815614839887765,
+    "mae": 186.75062362843755,
+    "max_error": 5278.521704066185
+  },
+  "sklearn_version": "1.9.0",
+  "dataset": "diamonds/train.csv",
+  "n_rows": 67406,
+  "trained_at": "2026-07-28T11:47:42+00:00"
+}

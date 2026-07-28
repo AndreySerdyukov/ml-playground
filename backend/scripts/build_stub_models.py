@@ -38,27 +38,9 @@ MODELS: list[tuple[ModelInfo, StubPredictor]] = [
     # wine – РЕАЛЬНАЯ обученная модель, собирается отдельно в training/wine.py
     # (не стаб). Здесь запись убрана намеренно, чтобы стаб-фабрика не перетирала
     # backend/models/wine.joblib при перегенерации остальных заглушек.
-    (
-        ModelInfo(
-            name="diamonds",
-            task="regression",
-            target="price",
-            target_unit="USD",
-            category="Regression",
-            emoji="",
-            is_stub=True,
-            description="Estimate a diamond's sale price from its cut, colour and measurements",
-            features=[
-                num("size", "Carat", 0.7, "ct"),
-                cat("cut", "Cut", ["Fair", "Good", "Very Good", "Premium", "Ideal"], "Ideal"),
-                cat("color", "Colour", ["D", "E", "F", "G", "H", "I", "J"], "G"),
-                cat("clarity", "Clarity", ["I1", "SI2", "SI1", "VS2", "VS1", "VVS2", "VVS1", "IF"], "VS2"),
-                num("depth_percent", "Depth", 61.5, "%"),
-                num("table_percent", "Table", 57.0, "%"),
-            ],
-        ),
-        StubPredictor(task="regression", base=300.0, scale=20.0),
-    ),
+    # diamonds – РЕАЛЬНАЯ обученная модель, собирается отдельно в training/diamonds.py
+    # (не стаб). Здесь запись убрана намеренно, чтобы стаб-фабрика не перетирала
+    # backend/models/diamonds.joblib при перегенерации остальных заглушек.
     # cars – РЕАЛЬНАЯ обученная модель, собирается отдельно в training/cars.py
     # (не стаб). Здесь запись убрана намеренно, чтобы стаб-фабрика не перетирала
     # backend/models/cars.joblib при перегенерации остальных заглушек.
