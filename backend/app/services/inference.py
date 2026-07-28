@@ -23,6 +23,10 @@ class InvalidFeaturesError(Exception):
     """The request is missing required model features."""
 
 
+class PredictionError(Exception):
+    """The estimator could not score the supplied inputs (bad shape/dtype, etc.)."""
+
+
 class InferenceService:
     """Orchestrates prediction on top of the model registry."""
 
@@ -48,31 +52,40 @@ class InferenceService:
             raise InvalidFeaturesError(f"Missing features: {', '.join(missing)}")
 
         row = pd.DataFrame([{name: features[name] for name in expected}])
+        # Coerce number-typed features (same contract as batch): a non-numeric value becomes NaN,
+        # which the pipeline's imputer handles - so a bad type yields a clean result, not a 500.
+        for feature in loaded.info.features:
+            if feature.type == "number":
+                row[feature.name] = pd.to_numeric(row[feature.name], errors="coerce")
         estimator = loaded.estimator
 
-        if loaded.info.task == "classification":
-            label = estimator.predict(row)[0]
-            probabilities = self._extract_proba(estimator, row)
-            return PredictResponse(
-                model_name=model_name,
-                task="classification",
-                prediction=self._to_python(label),
-                probabilities=probabilities,
-            )
+        try:
+            if loaded.info.task == "classification":
+                label = estimator.predict(row)[0]
+                probabilities = self._extract_proba(estimator, row)
+                return PredictResponse(
+                    model_name=model_name,
+                    task="classification",
+                    prediction=self._to_python(label),
+                    probabilities=probabilities,
+                )
 
-        value = float(estimator.predict(row)[0])
-        # Uplift models (S-learner) additionally return outcome probabilities in the two treatment scenarios -
-        # shown by the "rich" card. Other regressors do not have this method -> scenarios=None.
-        scenarios = None
-        if hasattr(estimator, "predict_scenarios"):
-            p_treat, p_control = estimator.predict_scenarios(row)
-            scenarios = {
-                "with_treatment": float(p_treat[0]),
-                "without_treatment": float(p_control[0]),
-            }
-        return PredictResponse(
-            model_name=model_name, task="regression", prediction=value, scenarios=scenarios
-        )
+            value = float(estimator.predict(row)[0])
+            # Uplift models (S-learner) additionally return outcome probabilities in the two treatment
+            # scenarios - shown by the "rich" card. Other regressors lack this method -> scenarios=None.
+            scenarios = None
+            if hasattr(estimator, "predict_scenarios"):
+                p_treat, p_control = estimator.predict_scenarios(row)
+                scenarios = {
+                    "with_treatment": float(p_treat[0]),
+                    "without_treatment": float(p_control[0]),
+                }
+            return PredictResponse(
+                model_name=model_name, task="regression", prediction=value, scenarios=scenarios
+            )
+        except Exception as exc:
+            # Surface any estimator failure (bad shape/dtype) as a clean 4xx, never a raw 500.
+            raise PredictionError(str(exc)) from exc
 
     def predict_batch(
         self, model_name: str, records: list[dict[str, object]]
@@ -99,7 +112,11 @@ class InferenceService:
             if feature.type == "number":
                 rows_in[feature.name] = pd.to_numeric(rows_in[feature.name], errors="coerce")
 
-        preds = loaded.estimator.predict(rows_in)
+        try:
+            preds = loaded.estimator.predict(rows_in)
+        except Exception as exc:
+            # Surface any estimator failure (bad shape/dtype) as a clean 4xx, never a raw 500.
+            raise PredictionError(str(exc)) from exc
         is_cls = loaded.info.task == "classification"
         out_rows: list[dict[str, Any]] = []
         for i, record in enumerate(rows_in.to_dict("records")):
@@ -140,5 +157,6 @@ class InferenceService:
     def _to_python(value: object) -> float | int | str:
         """Coerce a numpy scalar to a native Python type for serialization."""
         if isinstance(value, np.generic):
-            return value.item()
+            item: float | int | str = value.item()
+            return item
         return value  # type: ignore[return-value]

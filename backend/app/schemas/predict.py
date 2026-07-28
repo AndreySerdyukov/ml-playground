@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 # Model task type (uplift is modeled as regression - a numeric score).
 TaskType = Literal["regression", "classification"]
@@ -69,6 +69,9 @@ class PredictRequest(BaseModel):
 class PredictResponse(BaseModel):
     """Inference response."""
 
+    # `model_name` starts with the reserved `model_` prefix; opt out of the protected namespace.
+    model_config = ConfigDict(protected_namespaces=())
+
     model_name: str
     task: TaskType
     # Prediction: a number (regression) or a class label (classification).
@@ -82,6 +85,9 @@ class PredictResponse(BaseModel):
 
 class BatchPredictResponse(BaseModel):
     """Batch predict response: feature columns + rows with values and a prediction."""
+
+    # `model_name` starts with the reserved `model_` prefix; opt out of the protected namespace.
+    model_config = ConfigDict(protected_namespaces=())
 
     model_name: str
     task: TaskType

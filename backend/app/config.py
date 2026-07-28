@@ -19,7 +19,8 @@ class Settings(BaseSettings):
     app_name: str = "ml-serving-app"
     # Directory with trained model artifacts (*.joblib).
     models_dir: Path = Path(__file__).resolve().parent.parent / "models"
-    # Allowed CORS origins (frontend). Comma-separated list in APP_CORS_ORIGINS.
+    # Allowed CORS origins (frontend). Override via APP_CORS_ORIGINS as a JSON array,
+    # e.g. APP_CORS_ORIGINS='["https://example.com"]' (pydantic-settings parses list fields as JSON).
     cors_origins: list[str] = ["http://localhost:5173", "http://localhost:3000"]
 
 
