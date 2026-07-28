@@ -1,2 +1,2 @@
-# Сюда кладутся обученные артефакты моделей (*.joblib), собранные из training/.
-# Крупные бинарники — через git-LFS или .gitignore + скрипт скачивания.
+# Trained model artifacts (*.joblib) built from training/ are placed here.
+# Large binaries are delivered via git-LFS or .gitignore + a download script.

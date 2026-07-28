@@ -12,16 +12,16 @@ node_modules/
 dist/
 *.local
 
-# Крупные артефакты моделей (грузим через LFS или скрипт скачивания)
+# Large model artifacts (delivered via LFS or a download script)
 backend/models/*.joblib
 backend/models/*.pt
 backend/models/*.onnx
 
-# Среда и секреты
+# Environment and secrets
 .env
 .DS_Store
 
-# Внутренние рабочие доки — держим локально, в репозиторий не публикуем
+# Internal working docs - kept local, not published to the repo
 /PRD.md
 /progress.md
 /CLAUDE.md
