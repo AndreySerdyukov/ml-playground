@@ -1,0 +1,33 @@
+{
+  "name": "cars",
+  "task": "regression",
+  "target": "priceUSD",
+  "estimator": "hgb",
+  "feature_set": "prod",
+  "features": [
+    "company",
+    "model",
+    "year",
+    "mileage(km)",
+    "volume(cm3)",
+    "fuel",
+    "transmission",
+    "drive_unit",
+    "color",
+    "vehicle_size_class"
+  ],
+  "clean_domain": true,
+  "metrics": {
+    "mape": 0.18537515661516143,
+    "median_ape": 0.11945830309521904,
+    "within_10pct": 0.44002751031636866,
+    "within_15pct": 0.589958734525447,
+    "mae": 1051.119656789388,
+    "n_train": 29079,
+    "n_test": 7270
+  },
+  "sklearn_version": "1.9.0",
+  "dataset": "cars/train.csv",
+  "n_rows": 36349,
+  "trained_at": "2026-07-27T19:25:08+00:00"
+}

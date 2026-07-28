@@ -1,4 +1,4 @@
-"""Собирает стаб-артефакты 6 табличных моделей для веб-оболочки ML Playground.
+"""Собирает стаб-артефакты табличных моделей для веб-оболочки ML Playground.
 
 Каждый артефакт – `{"model": StubPredictor(...), "meta": ModelInfo(...).model_dump()}`
 в `backend/models/<name>.joblib`. Признаки курированы (чистые лейблы/единицы/примеры),
@@ -17,8 +17,8 @@ import joblib
 # Делаем пакет `app` импортируемым при запуске файла напрямую.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from app.schemas.predict import FeatureSpec, ModelInfo  # noqa: E402
-from app.stub_predictor import StubPredictor  # noqa: E402
+from app.schemas.predict import FeatureSpec, ModelInfo
+from app.stub_predictor import StubPredictor
 
 
 def num(name: str, label: str, example: float, unit: str | None = None) -> FeatureSpec:
@@ -31,7 +31,8 @@ def cat(name: str, label: str, choices: list[str], example: str) -> FeatureSpec:
     return FeatureSpec(name=name, type="category", label=label, choices=choices, example=example)
 
 
-# Описание 6 моделей: (ModelInfo без is_stub) + параметры StubPredictor.
+# Описание стаб-моделей: (ModelInfo без is_stub) + параметры StubPredictor.
+# cars здесь нет – это реальная модель (training/cars.py).
 MODELS: list[tuple[ModelInfo, StubPredictor]] = [
     (
         ModelInfo(
@@ -79,27 +80,9 @@ MODELS: list[tuple[ModelInfo, StubPredictor]] = [
         ),
         StubPredictor(task="regression", base=300.0, scale=20.0),
     ),
-    (
-        ModelInfo(
-            name="cars",
-            task="regression",
-            target="price",
-            target_unit="USD",
-            category="Regression",
-            emoji="",
-            is_stub=True,
-            description="Estimate a used car's price from make, year, mileage and engine",
-            features=[
-                cat("company", "Make", ["Toyota", "BMW", "Mercedes-Benz", "Audi", "Volkswagen", "Ford", "Renault", "Kia"], "Toyota"),
-                num("year", "Year", 2015),
-                num("mileage(km)", "Mileage", 120000, "km"),
-                cat("fuel", "Fuel", ["petrol", "diesel", "electro"], "petrol"),
-                num("volume(cm3)", "Engine volume", 1600, "cm³"),
-                cat("transmission", "Transmission", ["mechanics", "auto"], "auto"),
-            ],
-        ),
-        StubPredictor(task="regression", base=1500.0, scale=0.05),
-    ),
+    # cars – РЕАЛЬНАЯ обученная модель, собирается отдельно в training/cars.py
+    # (не стаб). Здесь запись убрана намеренно, чтобы стаб-фабрика не перетирала
+    # backend/models/cars.joblib при перегенерации остальных заглушек.
     (
         ModelInfo(
             name="bayesian",

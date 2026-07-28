@@ -39,6 +39,8 @@ class ModelInfo(BaseModel):
     category: str = ""
     # Единица измерения таргета (для карточки результата).
     target_unit: str | None = None
+    # Типичная относит. ошибка регрессии (median APE, доля) – UI рисует диапазон вокруг оценки.
+    typical_error_pct: float | None = None
     # Заглушка ли это (веса ещё не подставлены) – UI покажет бейдж «demo».
     is_stub: bool = False
 
@@ -58,3 +60,17 @@ class PredictResponse(BaseModel):
     prediction: float | str | int
     # Для классификации – вероятности по классам (если модель их отдаёт).
     probabilities: dict[str, float] | None = None
+
+
+class BatchPredictResponse(BaseModel):
+    """Ответ батч-предиктa: колонки-фичи + строки со значениями и предсказанием."""
+
+    model_name: str
+    task: TaskType
+    target: str
+    target_unit: str | None = None
+    # Имена фич-колонок в порядке (заголовок таблицы результатов на фронте).
+    columns: list[str]
+    # По строке: значения фич + ключ "prediction".
+    rows: list[dict[str, Any]]
+    count: int

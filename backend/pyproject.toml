@@ -8,8 +8,13 @@ dependencies = [
     "uvicorn[standard]>=0.30",
     "pydantic>=2.7",
     "pydantic-settings>=2.3",
+    # Загрузка файлов (multipart) + чтение .xlsx для батч-предикта.
+    "python-multipart>=0.0.9",
+    "openpyxl>=3.1",
     "joblib>=1.4",
-    "scikit-learn>=1.5",
+    # Пин минорной версии: обученный cars.joblib пиклится sklearn'ом и должен
+    # распаковываться той же минорной версией в рантайме (иначе ломается pickle).
+    "scikit-learn~=1.9.0",
     "pandas>=2.2",
     "numpy>=1.26",
 ]
@@ -33,3 +38,8 @@ target-version = "py312"
 [tool.mypy]
 python_version = "3.12"
 strict = true
+
+# У sklearn/joblib/pandas нет type-стабов – не считаем это ошибкой при strict.
+[[tool.mypy.overrides]]
+module = ["sklearn.*", "joblib", "pandas"]
+ignore_missing_imports = true

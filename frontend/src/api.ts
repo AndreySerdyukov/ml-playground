@@ -18,6 +18,7 @@ export type ModelInfo = {
   emoji: string;
   category: string;
   target_unit?: string | null;
+  typical_error_pct?: number | null;
   is_stub: boolean;
 };
 
@@ -26,6 +27,16 @@ export type PredictResponse = {
   task: "regression" | "classification";
   prediction: number | string;
   probabilities?: Record<string, number> | null;
+};
+
+export type BatchPredictResponse = {
+  model_name: string;
+  task: "regression" | "classification";
+  target: string;
+  target_unit?: string | null;
+  columns: string[];
+  rows: Record<string, unknown>[];
+  count: number;
 };
 
 const BASE = import.meta.env.VITE_API_URL ?? "";
@@ -48,6 +59,24 @@ export async function predict(
   if (!res.ok) {
     const detail = await res.json().catch(() => ({}));
     throw new Error(detail.detail ?? `Prediction failed (${res.status})`);
+  }
+  return res.json();
+}
+
+// Батч-предикт: загружаем CSV/Excel, получаем предсказание по каждой строке.
+export async function predictBatch(
+  modelName: string,
+  file: File,
+): Promise<BatchPredictResponse> {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await fetch(`${BASE}/api/models/${modelName}/predict-batch`, {
+    method: "POST",
+    body: form,
+  });
+  if (!res.ok) {
+    const detail = await res.json().catch(() => ({}));
+    throw new Error(detail.detail ?? `Batch prediction failed (${res.status})`);
   }
   return res.json();
 }
