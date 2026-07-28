@@ -20,3 +20,8 @@ backend/models/*.onnx
 # Среда и секреты
 .env
 .DS_Store
+
+# Внутренние рабочие доки — держим локально, в репозиторий не публикуем
+/PRD.md
+/progress.md
+/CLAUDE.md
