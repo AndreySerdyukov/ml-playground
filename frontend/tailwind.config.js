@@ -1,14 +1,18 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
+  darkMode: "class",
   theme: {
     extend: {
       colors: {
-        ink: "#1d1d1f", // primary text / чёрные действия
-        slate: "#6e6e73", // вторичный текст
-        mist: "#f5f5f7", // фон секций/карточек
-        hair: "#d2d2d7", // hairline-границы
-        link: "#0066cc", // акцентный синий Apple (скупо)
+        // Семантические токены на CSS-переменных: значения флипаются под .dark (см. index.css).
+        canvas: "rgb(var(--canvas) / <alpha-value>)", // фон страницы
+        surface: "rgb(var(--surface) / <alpha-value>)", // поля/дропдауны/поднятые карточки
+        ink: "rgb(var(--ink) / <alpha-value>)", // основной текст / сплошные действия
+        slate: "rgb(var(--slate) / <alpha-value>)", // вторичный текст
+        mist: "rgb(var(--mist) / <alpha-value>)", // фон секций/карточек результата
+        hair: "rgb(var(--hair) / <alpha-value>)", // hairline-границы
+        link: "rgb(var(--link) / <alpha-value>)", // акцентный синий Apple
       },
       fontFamily: {
         sans: [

@@ -1,6 +1,7 @@
 import { Link, NavLink } from "react-router-dom";
 import type { ModelInfo } from "../api";
 import { ModelIcon } from "./ModelIcon";
+import { ThemeToggle } from "./ThemeToggle";
 
 // Стеклянный sticky-навбар: бренд слева, модели справа (переключение).
 export function TopNav({ models }: { models: ModelInfo[] }) {
@@ -29,6 +30,7 @@ export function TopNav({ models }: { models: ModelInfo[] }) {
             </NavLink>
           ))}
         </div>
+        <ThemeToggle />
       </nav>
     </header>
   );
