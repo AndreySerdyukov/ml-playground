@@ -25,3 +25,4 @@ backend/models/*.onnx
 /PRD.md
 /progress.md
 /CLAUDE.md
+/docs/
