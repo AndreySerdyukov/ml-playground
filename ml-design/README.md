@@ -1,4 +1,4 @@
-# ML Playground — ml-design assets
+# ML Playground – ml-design assets
 
 ```
 ml-design/

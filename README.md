@@ -13,7 +13,7 @@ Each model ships as a self-contained artifact (`{"model": estimator, "meta": Mod
 serves a catalog; the frontend **generates the input form automatically** from each model's feature spec
 and renders a result card tailored to the task (a value with a typical-error band for regression, class
 probabilities with an interactive decision threshold for classification, a two-scenario lift card for
-uplift). Adding or swapping a model needs **no UI code** — the metadata drives everything.
+uplift). Adding or swapping a model needs **no UI code** – the metadata drives everything.
 
 Every model is trained by a standalone script under `backend/training/`, reads its data from `data/`, and
 writes the artifact plus a `*.model_card.json` (metrics + provenance). The exploratory notebooks that each
@@ -22,14 +22,14 @@ script distils live in `notebooks/`.
 ## Highlights
 
 - **Six real trained models** (no stubs) spanning regression, classification and uplift.
-- **Model-agnostic UI** — forms, dropdowns, examples and result cards are all built from backend metadata.
-- **Single and batch prediction** — one form, or upload a CSV/Excel and score every row.
-- **Interactive decision threshold** for binary classifiers — the label and precision/recall update live
+- **Model-agnostic UI** – forms, dropdowns, examples and result cards are all built from backend metadata.
+- **Single and batch prediction** – one form, or upload a CSV/Excel and score every row.
+- **Interactive decision threshold** for binary classifiers – the label and precision/recall update live
   as you drag the slider (computed client-side from the returned probabilities).
-- **Uplift decision card** — shows the incremental lift in percentage points, the purchase probability
+- **Uplift decision card** – shows the incremental lift in percentage points, the purchase probability
   with and without treatment, and a target / don't-target verdict.
 - **Light and dark theme** via CSS variables; strict TypeScript; layered, framework-free business logic.
-- **Reproducible** — data and notebooks are in the repo, so any model rebuilds from a clean clone.
+- **Reproducible** – data and notebooks are in the repo, so any model rebuilds from a clean clone.
 
 ## Models
 
@@ -53,7 +53,7 @@ frontend (React)  →  api/ (routers)  →  services/ (inference + file ingest) 
 
 - **Layered and framework-free.** Business logic in `services/` never imports FastAPI, so it is unit-testable
   in isolation; `repositories/` is the only place that knows artifacts come from `*.joblib` files.
-- **Stateless inference** — no database or cache by design.
+- **Stateless inference** – no database or cache by design.
 - **Metadata-driven.** A model's `ModelInfo` (name, task, feature specs, category, error band, threshold
   curve, …) is serialized inside the artifact and is the single source of truth for both serving and the UI.
 
@@ -62,9 +62,9 @@ frontend (React)  →  api/ (routers)  →  services/ (inference + file ingest) 
 ```
 backend/
   app/            FastAPI app: api / services / repositories / schemas, plus serving wrappers
-  training/       one script per model — reads data/<name>/, writes models/<name>.joblib + model_card
+  training/       one script per model – reads data/<name>/, writes models/<name>.joblib + model_card
   models/         built artifacts (*.joblib, gitignored) + *.model_card.json
-  scripts/        build_stub_models.py (empty now — all models are real)
+  scripts/        build_stub_models.py (empty now – all models are real)
 data/<name>/      training data + a short README per model
 notebooks/<name>/ the research notebooks each training script distils
 frontend/         React + TypeScript (Vite, Tailwind, react-router)
