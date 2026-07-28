@@ -119,7 +119,7 @@ export function ResultCard({
         <div className="mt-5">
           <p className="text-xs text-slate">±{Math.round(err * 100)}% typical range</p>
           <div className="relative mt-2 h-2 rounded-full bg-gradient-to-r from-hair via-ink/25 to-hair">
-            <span className="absolute left-1/2 top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-ink" />
+            <span className="absolute left-1/2 top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-mist bg-ink" />
           </div>
           <div className="mt-1.5 flex justify-between text-xs text-slate">
             <span>{formatNumber(pred * (1 - err))}</span>

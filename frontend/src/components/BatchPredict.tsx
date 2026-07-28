@@ -11,6 +11,11 @@ export function BatchPredict({ model }: { model: ModelInfo }) {
   const [loading, setLoading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // Uplift predictions are signed percentage points ("+3.7 pp") - same scale as the single-predict card.
+  const isUplift = model.category === "Uplift";
+  const predCell = (v: unknown): string =>
+    isUplift && typeof v === "number" ? `${v > 0 ? "+" : ""}${(v * 100).toFixed(1)} pp` : cell(v);
+
   async function run(): Promise<void> {
     if (!file) return;
     setLoading(true);
@@ -78,7 +83,7 @@ export function BatchPredict({ model }: { model: ModelInfo }) {
           <span className="text-slate">Columns: {model.features.map((f) => f.name).join(", ")}</span>
         </div>
 
-        {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+        {error && <p className="mt-4 text-sm text-red-600 dark:text-red-400">{error}</p>}
       </div>
 
       {res && (
@@ -115,7 +120,7 @@ export function BatchPredict({ model }: { model: ModelInfo }) {
                       </td>
                     ))}
                     <td className="whitespace-nowrap px-3 py-1.5 text-right font-medium text-ink">
-                      {cell(r.prediction)}
+                      {predCell(r.prediction)}
                     </td>
                   </tr>
                 ))}

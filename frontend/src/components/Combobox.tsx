@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
 
 // Custom dropdown (replaces the native select/datalist): unified styling, search for long
 // lists (model=972, company=91), keyboard support and close-on-outside-click.
@@ -30,6 +30,12 @@ export function Combobox({
     const matched = q ? options.filter((o) => o.toLowerCase().includes(q)) : options;
     return { visible: matched.slice(0, MAX_VISIBLE), total: matched.length };
   }, [options, query]);
+
+  // Stable ids for the listbox/options so screen readers can announce the active option.
+  const rawId = useId();
+  const listId = `${rawId}-listbox`;
+  const optionId = (i: number) => `${rawId}-opt-${i}`;
+  const activeDescendant = open && visible[active] ? optionId(active) : undefined;
 
   // Close on click outside the component.
   useEffect(() => {
@@ -85,6 +91,8 @@ export function Combobox({
         onKeyDown={onKeyDown}
         aria-haspopup="listbox"
         aria-expanded={open}
+        aria-controls={open ? listId : undefined}
+        aria-activedescendant={activeDescendant}
         className="field flex items-center justify-between text-left"
       >
         <span className={`truncate ${value ? "text-ink" : "text-slate"}`}>
@@ -113,30 +121,34 @@ export function Combobox({
               }}
               onKeyDown={onKeyDown}
               placeholder="Search…"
+              aria-label="Search options"
+              aria-controls={listId}
+              aria-activedescendant={activeDescendant}
               className="mb-1 w-full rounded-lg border border-hair px-3 py-2 text-[14px] outline-none focus:border-ink"
             />
           )}
-          <ul role="listbox" className="max-h-60 overflow-auto">
+          <ul role="listbox" id={listId} className="max-h-60 overflow-auto">
             {visible.length === 0 && (
               <li className="px-3 py-2 text-[14px] text-slate">No matches</li>
             )}
             {visible.map((opt, i) => (
-              <li key={opt}>
-                <button
-                  type="button"
-                  onClick={() => choose(opt)}
-                  onMouseEnter={() => setActive(i)}
-                  className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-[14px] text-ink ${
-                    i === active ? "bg-mist" : ""
-                  } ${opt === value ? "font-medium" : ""}`}
-                >
-                  <span className="truncate">{opt}</span>
-                  {opt === value && (
-                    <svg viewBox="0 0 20 20" className="ml-2 h-4 w-4 shrink-0" fill="currentColor">
-                      <path d="M8 13.5l-3.6-3.6 1.05-1.05L8 11.4l5.55-5.55L14.6 6.9z" />
-                    </svg>
-                  )}
-                </button>
+              <li
+                key={opt}
+                id={optionId(i)}
+                role="option"
+                aria-selected={opt === value}
+                onClick={() => choose(opt)}
+                onMouseEnter={() => setActive(i)}
+                className={`flex w-full cursor-pointer items-center justify-between rounded-lg px-3 py-2 text-left text-[14px] text-ink ${
+                  i === active ? "bg-mist" : ""
+                } ${opt === value ? "font-medium" : ""}`}
+              >
+                <span className="truncate">{opt}</span>
+                {opt === value && (
+                  <svg viewBox="0 0 20 20" className="ml-2 h-4 w-4 shrink-0" fill="currentColor">
+                    <path d="M8 13.5l-3.6-3.6 1.05-1.05L8 11.4l5.55-5.55L14.6 6.9z" />
+                  </svg>
+                )}
               </li>
             ))}
           </ul>

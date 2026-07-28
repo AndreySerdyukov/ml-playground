@@ -49,30 +49,35 @@ export function FeatureForm({ model }: { model: ModelInfo }) {
     <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
       <form onSubmit={onSubmit} className="rounded-apple border border-hair p-6 sm:p-8">
         <div className="grid gap-5 sm:grid-cols-2">
-          {model.features.map((f) => (
-            <div key={f.name} className="flex flex-col">
-              <span className="mb-1.5 text-sm text-slate">
-                {f.label ?? f.name}
-                {f.unit ? `, ${f.unit}` : ""}
-              </span>
-              {f.type === "category" && f.choices ? (
-                <Combobox
-                  value={values[f.name] ?? ""}
-                  onChange={(v) => set(f.name, v)}
-                  options={f.choices}
-                />
-              ) : (
-                <input
-                  type="number"
-                  step="any"
-                  className="field"
-                  value={values[f.name] ?? ""}
-                  onChange={(e) => set(f.name, e.target.value)}
-                  required
-                />
-              )}
-            </div>
-          ))}
+          {model.features.map((f) => {
+            const fieldId = `field-${f.name.replace(/[^a-zA-Z0-9]+/g, "-")}`;
+            return (
+              <div key={f.name} className="flex flex-col">
+                <label htmlFor={fieldId} className="mb-1.5 text-sm text-slate">
+                  {f.label ?? f.name}
+                  {f.unit ? `, ${f.unit}` : ""}
+                </label>
+                {f.type === "category" && f.choices ? (
+                  <Combobox
+                    id={fieldId}
+                    value={values[f.name] ?? ""}
+                    onChange={(v) => set(f.name, v)}
+                    options={f.choices}
+                  />
+                ) : (
+                  <input
+                    id={fieldId}
+                    type="number"
+                    step="any"
+                    className="field"
+                    value={values[f.name] ?? ""}
+                    onChange={(e) => set(f.name, e.target.value)}
+                    required
+                  />
+                )}
+              </div>
+            );
+          })}
         </div>
 
         <div className="mt-7 flex items-center gap-5">
@@ -88,7 +93,7 @@ export function FeatureForm({ model }: { model: ModelInfo }) {
           </button>
         </div>
 
-        {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+        {error && <p className="mt-4 text-sm text-red-600 dark:text-red-400">{error}</p>}
       </form>
 
       <ResultCard model={model} result={result} inputs={submitted} />

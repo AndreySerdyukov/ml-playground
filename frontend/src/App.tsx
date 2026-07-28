@@ -35,7 +35,10 @@ export default function App() {
       <main className="flex-1">
         <Routes>
           <Route path="/" element={<Home models={models} loading={loading} error={error} />} />
-          <Route path="/models/:name" element={<ModelPage models={models} />} />
+          <Route
+            path="/models/:name"
+            element={<ModelPage models={models} loading={loading} error={error} />}
+          />
         </Routes>
       </main>
       <footer className="border-t border-hair bg-mist">

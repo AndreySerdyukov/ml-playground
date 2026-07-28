@@ -4,13 +4,31 @@ import { ModelIcon } from "../components/ModelIcon";
 import type { ModelInfo } from "../api";
 
 // Model page: header + feature form + result.
-export function ModelPage({ models }: { models: ModelInfo[] }) {
+export function ModelPage({
+  models,
+  loading,
+  error,
+}: {
+  models: ModelInfo[];
+  loading: boolean;
+  error: string | null;
+}) {
   const { name } = useParams();
   const model = models.find((m) => m.name === name);
 
-  if (models.length === 0) {
+  if (loading) {
     return (
       <div className="mx-auto max-w-content px-6 py-24 text-center text-slate">Loading…</div>
+    );
+  }
+  if (error) {
+    return (
+      <div className="mx-auto max-w-content px-6 py-24 text-center">
+        <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+        <Link to="/" className="mt-4 inline-block text-link">
+          ← Back to models
+        </Link>
+      </div>
     );
   }
   if (!model) {
