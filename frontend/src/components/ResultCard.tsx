@@ -120,24 +120,32 @@ export function ResultCard({
 
       {probs.length > 0 && (
         <div className="mt-6 space-y-2.5">
-          {probs.map(([cls, p]) => (
-            <div key={cls}>
-              <div className="flex justify-between text-xs text-slate">
-                <span>{cls}</span>
-                <span>{(p * 100).toFixed(1)}%</span>
-              </div>
-              <div className="relative mt-1 h-1.5 w-full rounded-full bg-canvas">
-                <div className="h-1.5 rounded-full bg-ink" style={{ width: `${p * 100}%` }} />
-                {/* Маркер порога на баре positive-класса — видно, где проходит граница решения. */}
-                {isBinaryThresh && cls === pos && (
-                  <span
-                    className="absolute top-1/2 h-3 w-0.5 -translate-y-1/2 bg-slate"
-                    style={{ left: `${threshold * 100}%` }}
+          {probs.map(([cls, p]) => {
+            // Класс, который «выигрывает» при текущем пороге (совпадает с лейблом) — подсвечиваем,
+            // чтобы при пересечении маркера переключение было видно прямо на барах.
+            const winning = isBinaryThresh && cls === label;
+            return (
+              <div key={cls}>
+                <div className="flex justify-between text-xs">
+                  <span className={winning ? "font-medium text-ink" : "text-slate"}>{cls}</span>
+                  <span className="text-slate">{(p * 100).toFixed(1)}%</span>
+                </div>
+                <div className="relative mt-1 h-1.5 w-full rounded-full bg-canvas">
+                  <div
+                    className={`h-1.5 rounded-full ${isBinaryThresh && !winning ? "bg-ink/35" : "bg-ink"}`}
+                    style={{ width: `${p * 100}%` }}
                   />
-                )}
+                  {/* Маркер порога на баре positive-класса — видно, где проходит граница решения. */}
+                  {isBinaryThresh && cls === pos && (
+                    <span
+                      className="absolute top-1/2 h-3 w-0.5 -translate-y-1/2 bg-ink"
+                      style={{ left: `${threshold * 100}%` }}
+                    />
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
