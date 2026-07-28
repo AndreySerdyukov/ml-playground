@@ -32,33 +32,12 @@ def cat(name: str, label: str, choices: list[str], example: str) -> FeatureSpec:
 
 
 # Описание стаб-моделей: (ModelInfo без is_stub) + параметры StubPredictor.
-# cars здесь нет – это реальная модель (training/cars.py).
+# Реальные модели (cars/wine/bayesian/loans) здесь НЕ описаны – они собираются
+# отдельно в training/<name>.py; ниже остаются только настоящие заглушки.
 MODELS: list[tuple[ModelInfo, StubPredictor]] = [
-    (
-        ModelInfo(
-            name="wine",
-            task="classification",
-            target="quality",
-            category="Classification",
-            emoji="",
-            is_stub=True,
-            description="Predict wine quality (score 3–8) from physicochemical properties",
-            features=[
-                num("fixed acidity", "Fixed acidity", 7.4, "g/L"),
-                num("volatile acidity", "Volatile acidity", 0.70, "g/L"),
-                num("citric acid", "Citric acid", 0.0, "g/L"),
-                num("residual sugar", "Residual sugar", 1.9, "g/L"),
-                num("chlorides", "Chlorides", 0.076, "g/L"),
-                num("free sulfur dioxide", "Free SO₂", 11, "mg/L"),
-                num("total sulfur dioxide", "Total SO₂", 34, "mg/L"),
-                num("density", "Density", 0.9978, "g/cm³"),
-                num("pH", "pH", 3.51),
-                num("sulphates", "Sulphates", 0.56, "g/L"),
-                num("alcohol", "Alcohol", 9.4, "% vol"),
-            ],
-        ),
-        StubPredictor(task="classification", classes=["3", "4", "5", "6", "7", "8"]),
-    ),
+    # wine – РЕАЛЬНАЯ обученная модель, собирается отдельно в training/wine.py
+    # (не стаб). Здесь запись убрана намеренно, чтобы стаб-фабрика не перетирала
+    # backend/models/wine.joblib при перегенерации остальных заглушек.
     (
         ModelInfo(
             name="diamonds",

@@ -1,0 +1,52 @@
+{
+  "name": "wine",
+  "task": "classification",
+  "target": "quality >= 7 (Good vs Standard)",
+  "classes": [
+    "Standard",
+    "Good"
+  ],
+  "estimator": "ExtraTreesClassifier",
+  "features": [
+    "fixed acidity",
+    "volatile acidity",
+    "citric acid",
+    "residual sugar",
+    "chlorides",
+    "free sulfur dioxide",
+    "total sulfur dioxide",
+    "density",
+    "pH",
+    "sulphates",
+    "alcohol"
+  ],
+  "metrics": {
+    "accuracy": 0.7797101449275362,
+    "roc_auc": 0.8711137060283171,
+    "pr_auc": 0.7828925814331834,
+    "precision": 0.6846153846153846,
+    "recall": 0.717741935483871,
+    "f1": 0.7007874015748031,
+    "confusion_matrix": [
+      [
+        180,
+        41
+      ],
+      [
+        35,
+        89
+      ]
+    ],
+    "labels": [
+      "Standard",
+      "Good"
+    ],
+    "n_train": 1380,
+    "n_test": 345,
+    "cv_roc_auc": 0.849197366407067
+  },
+  "sklearn_version": "1.9.0",
+  "dataset": "wine/train.csv",
+  "n_rows": 1725,
+  "trained_at": "2026-07-28T09:53:00+00:00"
+}
