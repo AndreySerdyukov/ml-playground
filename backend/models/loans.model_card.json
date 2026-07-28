@@ -1,0 +1,53 @@
+{
+  "name": "loans",
+  "task": "classification",
+  "target": "Target",
+  "classes": [
+    "Rejected",
+    "Approved"
+  ],
+  "estimator": "stacking(grad+ada+forest -> logreg)",
+  "features": [
+    "C1",
+    "N2",
+    "N3",
+    "C4_enc",
+    "C5_enc",
+    "C6_enc",
+    "N7",
+    "C8",
+    "C9",
+    "N10",
+    "C11",
+    "C12_enc",
+    "N13",
+    "N14"
+  ],
+  "metrics": {
+    "accuracy": 0.8559322033898306,
+    "roc_auc": 0.9332365747460086,
+    "precision": 0.8103448275862069,
+    "recall": 0.8867924528301887,
+    "f1": 0.8468468468468469,
+    "confusion_matrix": [
+      [
+        54,
+        11
+      ],
+      [
+        6,
+        47
+      ]
+    ],
+    "labels": [
+      "Rejected",
+      "Approved"
+    ],
+    "n_train": 468,
+    "n_test": 118
+  },
+  "sklearn_version": "1.9.0",
+  "dataset": "loans/train.csv",
+  "n_rows": 586,
+  "trained_at": "2026-07-28T08:46:20+00:00"
+}

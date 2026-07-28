@@ -102,26 +102,9 @@ MODELS: list[tuple[ModelInfo, StubPredictor]] = [
         ),
         StubPredictor(task="regression", base=1.2, scale=0.05),
     ),
-    (
-        ModelInfo(
-            name="loans",
-            task="classification",
-            target="default risk",
-            category="Classification",
-            emoji="",
-            is_stub=True,
-            description="Credit-default classifier (illustrative fields – source dataset is anonymised)",
-            features=[
-                num("annual_income", "Annual income", 45000, "USD"),
-                num("loan_amount", "Loan amount", 12000, "USD"),
-                cat("term_months", "Term", ["12", "24", "36", "60"], "36"),
-                num("employment_years", "Employment length", 4, "yrs"),
-                num("existing_debts", "Existing debts", 5000, "USD"),
-                cat("purpose", "Purpose", ["car", "education", "home", "business", "other"], "car"),
-            ],
-        ),
-        StubPredictor(task="classification", classes=["Repaid", "Default"]),
-    ),
+    # loans – РЕАЛЬНАЯ обученная модель, собирается отдельно в training/loans.py
+    # (не стаб). Здесь запись убрана намеренно, чтобы стаб-фабрика не перетирала
+    # backend/models/loans.joblib при перегенерации остальных заглушек.
     (
         ModelInfo(
             name="uplift",
