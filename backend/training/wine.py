@@ -42,7 +42,7 @@ from sklearn.metrics import (
     recall_score,
     roc_auc_score,
 )
-from sklearn.model_selection import StratifiedKFold, cross_val_score, train_test_split
+from sklearn.model_selection import StratifiedKFold, cross_val_predict
 from sklearn.pipeline import Pipeline
 
 # Делаем пакет `app` импортируемым при запуске файла напрямую (training/ -> backend/).
@@ -125,36 +125,37 @@ def build_pipeline() -> Pipeline:
     )
 
 
-def evaluate(model: Pipeline, x_test: pd.DataFrame, y_test: pd.Series) -> dict[str, Any]:
-    """Метрики на holdout: accuracy, ROC-AUC, PR-AUC, precision/recall/F1 (Good), матрица ошибок."""
-    pred = model.predict(x_test)
-    classes = list(model.classes_)
-    pos_idx = classes.index(POSITIVE_LABEL)
-    proba_pos = model.predict_proba(x_test)[:, pos_idx]
-    y_true_bin = (y_test.to_numpy() == POSITIVE_LABEL).astype(int)
-    labels = [BAD_LABEL, GOOD_LABEL]
+def compute_metrics(y_bin: np.ndarray, proba_good: np.ndarray) -> dict[str, Any]:
+    """Метрики по 5-fold OOF-предсказаниям – всё из одного честного источника, порог 0.5.
+
+    Для несбалансированной бинарной задачи главные метрики – precision/recall/F1 по классу Good и
+    ранжирующие ROC-AUC/PR-AUC; accuracy держим в карточке, но в заголовок НЕ выносим (обманчива:
+    ~64% даёт даже модель, всегда предсказывающая Standard).
+    """
+    y_pred = (proba_good >= 0.5).astype(int)  # 1 = Good
     return {
-        "accuracy": float(accuracy_score(y_test, pred)),
-        "roc_auc": float(roc_auc_score(y_true_bin, proba_pos)),
-        "pr_auc": float(average_precision_score(y_true_bin, proba_pos)),
-        "precision": float(precision_score(y_test, pred, pos_label=POSITIVE_LABEL)),
-        "recall": float(recall_score(y_test, pred, pos_label=POSITIVE_LABEL)),
-        "f1": float(f1_score(y_test, pred, pos_label=POSITIVE_LABEL)),
-        # Матрица ошибок в порядке labels=[Standard, Good].
-        "confusion_matrix": confusion_matrix(y_test, pred, labels=labels).tolist(),
-        "labels": labels,
+        "precision": float(precision_score(y_bin, y_pred, zero_division=0)),
+        "recall": float(recall_score(y_bin, y_pred)),
+        "f1": float(f1_score(y_bin, y_pred)),
+        "roc_auc": float(roc_auc_score(y_bin, proba_good)),
+        "pr_auc": float(average_precision_score(y_bin, proba_good)),
+        "accuracy": float(accuracy_score(y_bin, y_pred)),
+        # Матрица ошибок в порядке [Standard(0), Good(1)].
+        "confusion_matrix": confusion_matrix(y_bin, y_pred, labels=[0, 1]).tolist(),
+        "labels": [BAD_LABEL, GOOD_LABEL],
     }
 
 
 def build_model_info(specs: list[FeatureSpec], metrics: dict[str, Any], n_rows: int) -> ModelInfo:
     """Карточка модели для реестра/формы (is_stub=False – бейдж «demo» исчезнет)."""
-    # Заголовок: ROC-AUC – по устойчивому 5-fold CV (honest, не по удачному holdout);
-    # accuracy – с holdout-сплита (для порядка величины).
-    auc = metrics["cv_roc_auc"]
-    acc = metrics["accuracy"]
+    # Заголовок – самые релевантные для задачи метрики класса Good: precision + recall + ROC-AUC
+    # (всё по 5-fold OOF). Accuracy НЕ показываем – для несбаланс. бинарной задачи обманчива.
+    prec = metrics["precision"]
+    rec = metrics["recall"]
+    auc = metrics["roc_auc"]
     description = (
-        f"Good-wine (quality ≥ 7) classifier – ROC-AUC {auc:.2f}, accuracy {acc:.0%} "
-        f"(extra-trees ensemble on {n_rows:,} wines)"
+        f"Good-wine (quality ≥ 7) classifier – precision {prec:.0%}, recall {rec:.0%}, "
+        f"ROC-AUC {auc:.2f} (extra-trees on {n_rows:,} wines)"
     )
     return ModelInfo(
         name="wine",
@@ -182,32 +183,24 @@ def main() -> None:
 
     x = df[FEATURE_COLUMNS]
     y = to_labels(df[TARGET_COL])
+    y_bin = (y == POSITIVE_LABEL).astype(int).to_numpy()
+    good_share = float(y_bin.mean())
+    print(f"Обучение: {len(FEATURE_COLUMNS)} фич, ExtraTrees, строк={len(df)}, Good={good_share:.1%}")
 
-    x_train, x_test, y_train, y_test = train_test_split(
-        x, y, test_size=0.2, random_state=42, stratify=y
-    )
-    good_share = float((y == POSITIVE_LABEL).mean())
-    print(f"Обучение: {len(FEATURE_COLUMNS)} фич, ExtraTrees, строк={len(df)} "
-          f"(train={len(x_train)}, test={len(x_test)}, Good={good_share:.1%})")
-
-    # Оценка на holdout.
-    eval_model = build_pipeline()
-    eval_model.fit(x_train, y_train)
-    metrics = evaluate(eval_model, x_test, y_test)
-    metrics["n_train"] = len(x_train)
-    metrics["n_test"] = len(x_test)
-
-    # Устойчивая оценка ранжирования – 5-fold CV ROC-AUC на всех данных (holdout из 345 строк шумный).
-    y_bin = (y == POSITIVE_LABEL).astype(int)
+    # Оценка – по 5-fold OOF на ВСЕХ данных (устойчивее одиночного holdout из 345 строк, без утечки:
+    # каждая строка предсказывается моделью, обученной на других фолдах). proba[:,1] = класс Good.
     cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
-    metrics["cv_roc_auc"] = float(
-        cross_val_score(build_pipeline(), x, y_bin, scoring="roc_auc", cv=cv, n_jobs=-1).mean()
-    )
-    print(f"  accuracy={metrics['accuracy']:.3f}  ROC-AUC={metrics['roc_auc']:.3f}  "
-          f"PR-AUC={metrics['pr_auc']:.3f}  precision={metrics['precision']:.3f}  "
-          f"recall={metrics['recall']:.3f}  F1={metrics['f1']:.3f}  (cv ROC-AUC={metrics['cv_roc_auc']:.3f})")
+    oof_good = cross_val_predict(
+        build_pipeline(), x, y_bin, cv=cv, method="predict_proba", n_jobs=-1
+    )[:, 1]
+    metrics = compute_metrics(y_bin, oof_good)
+    metrics["n_rows"] = len(df)
+    metrics["eval"] = "5-fold OOF, threshold 0.5"
+    print(f"  precision={metrics['precision']:.3f}  recall={metrics['recall']:.3f}  "
+          f"F1={metrics['f1']:.3f}  ROC-AUC={metrics['roc_auc']:.3f}  PR-AUC={metrics['pr_auc']:.3f}  "
+          f"accuracy={metrics['accuracy']:.3f}")
 
-    # Финальная модель – на всех данных.
+    # Финальная модель – на всех данных (строковые классы Good/Standard для UI).
     final_model = build_pipeline()
     final_model.fit(x, y)
 
