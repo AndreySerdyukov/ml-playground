@@ -16,7 +16,8 @@ dependencies = [
     # be unpickled by the same minor version at runtime (otherwise the pickle breaks).
     "scikit-learn~=1.9.0",
     "pandas>=2.2",
-    "numpy>=1.26",
+    # numpy>=2.0 is required: training/uplift.py uses np.trapezoid, added in NumPy 2.0.
+    "numpy>=2.0",
 ]
 
 [dependency-groups]

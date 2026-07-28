@@ -1,8 +1,9 @@
 # Frontend: Vite build → serving static files via nginx.
 FROM node:22-alpine AS build
 WORKDIR /app
-COPY package.json ./
-RUN npm install
+# Reproducible install from the lockfile.
+COPY package.json package-lock.json ./
+RUN npm ci
 COPY . .
 RUN npm run build
 
