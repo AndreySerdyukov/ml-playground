@@ -14,13 +14,11 @@ Source research notebooks behind the trained models, one folder per model.
   - `ML_Classification_Wine_Selection.ipynb` – EDA, scaler/model grid search
   - `ML_Classification_Wine_Model.ipynb` – final model (notebook used logistic regression)
 - `diamonds/` – diamond price regression
-  - `diamonds_outlier_fix.ipynb` – the outlier-handling lesson: reproduces the flawed IQR-on-target
-    filter (inflates MAPE) vs the correct split-first, clean-only-on-train pipeline (MAPE ≈ 6.9%,
-    beating the group best 7.31%). Source coursework notebooks: `~/personal/ML-projects/Diamonds/`.
+  - `Serdyukov_podbor_brilliants.ipynb` – EDA, feature engineering, model & hyperparameter selection
+  - `Serdyukov_model_brilliants.ipynb` – final model pipeline
 - `uplift/` – incremental SMS-effect modeling (X5 Retail Hero)
-  - `uplift_solomodel.ipynb` – S-learner (Treatment Dummy) with honest Qini/uplift@k on the real A/B
-    (not the proxy file the original used); shows the uplift score varies and targeting beats random
-    (Qini ≈ 0.08, top-decile ≈ 10pp vs 3.3pp average). Source project: `~/personal/ML-projects/Uplift/`.
+  - `preproc.ipynb` – data prep + feature engineering (builds the feature matrix from clients/products/purchases)
+  - `uplift_models.ipynb` – five uplift approaches (S-/T-learner, class transformation, uplift forest) + evaluation
 
 The **production** training that ships weights into the app is the standalone script
 `backend/training/<model>.py` (reads `data/<model>/`, writes `backend/models/<model>.joblib`). The
