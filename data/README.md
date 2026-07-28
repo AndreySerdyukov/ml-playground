@@ -18,5 +18,12 @@ Training and test datasets, one folder per model. This is the source of truth fo
   - `train.csv` – labelled wines (`quality` score; binarised to `quality ≥ 7` = Good)
   - `test.csv` – unlabelled holdout (competition-style, no target)
   - `README.md` – column description
+- `diamonds/` – diamond attributes and prices
+  - `train.csv` – labelled training data (`total_sales_price` target)
+  - `test.csv` + `test_Y_true.csv` – held-out features and their true prices, for external scoring
+  - `README.md` – column description
+- `uplift/` – X5 Retail Hero A/B promo-SMS records
+  - `train.csv` – `treatment_flg` and `target` plus 13 customer-profile features
+  - `README.md` – column description
 
 Note: `backend/models/*.joblib` are gitignored (rebuilt from this data via the training scripts).
