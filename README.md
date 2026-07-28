@@ -35,12 +35,12 @@ script distils live in `notebooks/`.
 
 | Model | Predicts | Type | Approach | Held-out quality |
 |---|---|---|---|---|
-| **Cars** | Used-car price (USD) | Regression | HistGradientBoosting on a log target | median error ≈ 12%, 44% within 10% |
+| **Cars** | Used-car price (USD) | Regression | HistGradientBoosting on a log target | median error ≈ 12%, 44% within 10% (ordinary cars) |
 | **Wine** | Wine quality is "good" (≥ 7) | Classification | Extra-Trees + tuned decision threshold | ROC-AUC 0.85, F1 0.70 |
 | **Diamonds** | Diamond price (USD) | Regression | HistGradientBoosting (gamma loss) | **MAPE 6.9%** on a held-out test set |
 | **Loans** | Credit application approved | Classification | Stacking ensemble (GB + AdaBoost + RF → LogReg) | accuracy 86%, ROC-AUC 0.93 |
-| **Uplift** | Incremental effect of a promo SMS | Uplift | S-learner (Treatment Dummy, HistGradientBoosting) | Qini 0.08, uplift@30% 5.7pp vs 3.3pp average |
-| **Bayesian** | Hourly wage ($/hr) | Regression | Bayesian ridge on a log target | median error ≈ 26%, MAE $1.98/hr |
+| **Uplift** | Incremental effect of a promo SMS | Uplift | S-learner (Treatment Dummy, HistGradientBoosting) | uplift@30% 5.7pp vs 3.3pp average, Qini 0.01 |
+| **Bayesian** | Hourly wage ($/hr) | Regression | Bayesian ridge on a log target | median error ≈ 28%, MAE $2.01/hr (grouped by worker) |
 
 Full metrics and provenance for each model are in `backend/models/<name>.model_card.json`; the modeling
 write-ups are in `notebooks/<name>/`.

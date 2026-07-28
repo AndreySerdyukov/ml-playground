@@ -287,6 +287,14 @@ def main() -> None:
         "feature_set": args.feature_set,
         "features": columns,
         "clean_domain": clean_domain,
+        # Metric scope: with clean_domain the reported MAPE covers ONLY ordinary running cars
+        # (condition="with mileage", price 500-120000 USD, mileage 1-700000 km). Scrap/damaged and
+        # absurd listings are excluded by design - the headline error is for this domain, not the raw feed.
+        "metric_scope": (
+            "ordinary running cars only (condition='with mileage', price 500-120000 USD, "
+            "mileage 1-700000 km); extreme/scrap listings excluded by design"
+            if clean_domain else "whole dataset (no domain filter)"
+        ),
         "metrics": metrics,
         "sklearn_version": sklearn.__version__,
         # Only the path tail - without the absolute path containing the username (no PII in the repo).

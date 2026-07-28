@@ -17,6 +17,7 @@
     "vehicle_size_class"
   ],
   "clean_domain": true,
+  "metric_scope": "ordinary running cars only (condition='with mileage', price 500-120000 USD, mileage 1-700000 km); extreme/scrap listings excluded by design",
   "metrics": {
     "mape": 0.18537515661516143,
     "median_ape": 0.11945830309521904,
@@ -29,5 +30,5 @@
   "sklearn_version": "1.9.0",
   "dataset": "cars/train.csv",
   "n_rows": 36349,
-  "trained_at": "2026-07-27T19:25:08+00:00"
+  "trained_at": "2026-07-28T15:45:38+00:00"
 }

@@ -37,7 +37,7 @@ from sklearn.compose import ColumnTransformer, TransformedTargetRegressor
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import BayesianRidge
 from sklearn.metrics import mean_absolute_error
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import GroupShuffleSplit
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder
 
@@ -180,9 +180,16 @@ def main() -> None:
     # `Wage` is log-wage; we keep the training/eval target in $/hr (exp), the pipeline does the log.
     y = np.exp(df[TARGET_COL].astype(float))
 
-    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
-    print(f"Training: {len(FEATURE_COLUMNS)} features, BayesianRidge, rows={len(df)} "
-          f"(train={len(x_train)}, test={len(x_test)})")
+    # This is PANEL data (many worker-year rows per worker): a plain random split would leak the same
+    # worker into both train and test. Group by worker `id` so the holdout measures out-of-worker
+    # generalization (honest), not memorized workers.
+    groups = df["id"].to_numpy()
+    gss = GroupShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
+    train_idx, test_idx = next(gss.split(x, y, groups=groups))
+    x_train, x_test = x.iloc[train_idx], x.iloc[test_idx]
+    y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
+    print(f"Training: {len(FEATURE_COLUMNS)} features, BayesianRidge, rows={len(df)}, "
+          f"workers={df['id'].nunique()} (grouped split: train={len(x_train)}, test={len(x_test)})")
 
     # Evaluation on holdout.
     eval_model = build_pipeline()
@@ -209,6 +216,7 @@ def main() -> None:
         "task": "regression",
         "target": "exp(Wage) = $/hr",
         "estimator": "BayesianRidge + log-target",
+        "split": "GroupShuffleSplit by worker id (panel data: no worker shared between train/test)",
         "features": FEATURE_COLUMNS,
         "metrics": metrics,
         "sklearn_version": sklearn.__version__,

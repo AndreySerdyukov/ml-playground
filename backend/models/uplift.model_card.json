@@ -19,7 +19,7 @@
     "count_above_1000"
   ],
   "metrics_holdout_ab": {
-    "qini": 0.0818225522877631,
+    "qini": 0.013161660311352623,
     "uplift_at_10": 0.09893155438290258,
     "uplift_at_20": 0.07098837316933698,
     "uplift_at_30": 0.05672624925080294,
@@ -30,5 +30,5 @@
   "sklearn_version": "1.9.0",
   "dataset": "uplift/train.csv",
   "n_rows": 200039,
-  "trained_at": "2026-07-28T12:24:06+00:00"
+  "trained_at": "2026-07-28T15:39:24+00:00"
 }

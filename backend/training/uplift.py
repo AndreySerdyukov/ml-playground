@@ -130,11 +130,17 @@ def _qini_area(y: np.ndarray, w: np.ndarray, order: np.ndarray) -> float:
 
 
 def qini_coefficient(y: np.ndarray, w: np.ndarray, score: np.ndarray) -> float:
-    """Normalized Qini: 0 = random targeting, 1 = perfect ranking."""
+    """Normalized Qini: 0 = random targeting, 1 = perfect ranking.
+
+    The denominator is the area of the OPTIMAL Qini curve. Optimal ranking = treated responders
+    first (they add to the treated gain), control responders STRICTLY last (they subtract via the
+    nt/nc term), non-responders in between. Key: treated-buyer=+2, non-buyer=0, control-buyer=-2.
+    On noisy binary outcomes this optimal denominator is large, so a genuinely useful model can
+    still score a small normalized Qini - read it together with uplift@k, which is more intuitive.
+    """
     model = _qini_area(y, w, np.argsort(-score))
-    # Ideal: treated buyers first, then control buyers at the bottom.
-    perfect_order = np.argsort(-np.where(w == 1, y + 1, -(1 - y)))
-    perfect = _qini_area(y, w, perfect_order)
+    perfect_key = np.where(y == 1, np.where(w == 1, 2, -2), 0)
+    perfect = _qini_area(y, w, np.argsort(-perfect_key))
     return model / perfect if perfect else 0.0
 
 
@@ -157,8 +163,8 @@ def evaluate(wrap: SoloModelUplift, x_val: pd.DataFrame, w_val: np.ndarray, y_va
 def build_model_info(specs: list[FeatureSpec], m: dict[str, float], n: int) -> ModelInfo:
     """Model card (category='Uplift' → a "rich" card with two scenarios)."""
     description = (
-        f"Which customers a promo SMS actually persuades to buy. Qini {m['qini']:.3f}, "
-        f"uplift@30% {m['uplift_at_30']:.1%} vs {m['ate']:.1%} average lift "
+        f"Which customers a promo SMS actually persuades to buy. uplift@30% "
+        f"{m['uplift_at_30']:.1%} vs {m['ate']:.1%} average lift, Qini {m['qini']:.3f} "
         f"(S-learner on {n:,} A/B records)"
     )
     return ModelInfo(
