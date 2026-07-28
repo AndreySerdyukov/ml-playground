@@ -38,11 +38,16 @@ from sklearn.metrics import (
     average_precision_score,
     confusion_matrix,
     f1_score,
+    make_scorer,
     precision_score,
     recall_score,
     roc_auc_score,
 )
-from sklearn.model_selection import StratifiedKFold, cross_val_predict
+from sklearn.model_selection import (
+    StratifiedKFold,
+    TunedThresholdClassifierCV,
+    cross_val_predict,
+)
 from sklearn.pipeline import Pipeline
 
 # Делаем пакет `app` импортируемым при запуске файла напрямую (training/ -> backend/).
@@ -125,37 +130,52 @@ def build_pipeline() -> Pipeline:
     )
 
 
-def compute_metrics(y_bin: np.ndarray, proba_good: np.ndarray) -> dict[str, Any]:
-    """Метрики по 5-fold OOF-предсказаниям – всё из одного честного источника, порог 0.5.
+def build_tuned() -> TunedThresholdClassifierCV:
+    """Базовый пайплайн + подстройка порога решения под максимум F1 (класс Good) через внутр. CV.
 
-    Для несбалансированной бинарной задачи главные метрики – precision/recall/F1 по классу Good и
-    ранжирующие ROC-AUC/PR-AUC; accuracy держим в карточке, но в заголовок НЕ выносим (обманчива:
-    ~64% даёт даже модель, всегда предсказывающая Standard).
+    Порог 0.5 для 36%-миноритарного класса слишком строг – душит recall. Тюним по F1 (обычно ~0.4),
+    после чего `predict` использует подобранный порог; `predict_proba`/`classes_` доступны инференсу.
     """
-    y_pred = (proba_good >= 0.5).astype(int)  # 1 = Good
+    scorer = make_scorer(f1_score, pos_label=POSITIVE_LABEL)
+    return TunedThresholdClassifierCV(
+        build_pipeline(), scoring=scorer, cv=5, response_method="predict_proba", random_state=42
+    )
+
+
+def compute_metrics(
+    y_bin: np.ndarray, base_proba_good: np.ndarray, tuned_pred: np.ndarray
+) -> dict[str, Any]:
+    """Метрики честно по OOF: ранжирующие – из базовых вероятностей (порог-независимы), операционные
+    (precision/recall/F1/accuracy) – из предсказаний тюнингового классификатора (вложенная CV, порог
+    подобран на внутренних фолдах и не видит своих тестовых строк).
+    """
+    tuned_bin = (tuned_pred == POSITIVE_LABEL).astype(int)  # 1 = Good
     return {
-        "precision": float(precision_score(y_bin, y_pred, zero_division=0)),
-        "recall": float(recall_score(y_bin, y_pred)),
-        "f1": float(f1_score(y_bin, y_pred)),
-        "roc_auc": float(roc_auc_score(y_bin, proba_good)),
-        "pr_auc": float(average_precision_score(y_bin, proba_good)),
-        "accuracy": float(accuracy_score(y_bin, y_pred)),
+        # Ранжирование модели (не зависит от порога) – это и есть «насколько модель хороша».
+        "roc_auc": float(roc_auc_score(y_bin, base_proba_good)),
+        "pr_auc": float(average_precision_score(y_bin, base_proba_good)),
+        # Операционная точка при подобранном пороге.
+        "precision": float(precision_score(y_bin, tuned_bin, zero_division=0)),
+        "recall": float(recall_score(y_bin, tuned_bin)),
+        "f1": float(f1_score(y_bin, tuned_bin)),
+        "accuracy": float(accuracy_score(y_bin, tuned_bin)),
         # Матрица ошибок в порядке [Standard(0), Good(1)].
-        "confusion_matrix": confusion_matrix(y_bin, y_pred, labels=[0, 1]).tolist(),
+        "confusion_matrix": confusion_matrix(y_bin, tuned_bin, labels=[0, 1]).tolist(),
         "labels": [BAD_LABEL, GOOD_LABEL],
     }
 
 
 def build_model_info(specs: list[FeatureSpec], metrics: dict[str, Any], n_rows: int) -> ModelInfo:
     """Карточка модели для реестра/формы (is_stub=False – бейдж «demo» исчезнет)."""
-    # Заголовок – самые релевантные для задачи метрики класса Good: precision + recall + ROC-AUC
-    # (всё по 5-fold OOF). Accuracy НЕ показываем – для несбаланс. бинарной задачи обманчива.
-    prec = metrics["precision"]
-    rec = metrics["recall"]
+    # Заголовок – порог-независимые ROC-AUC/PR-AUC (честная «сила» модели) + F1 (сводка precision/recall
+    # в подобранной точке). Accuracy и голые precision/recall в заголовок НЕ выносим: первая обманчива
+    # для несбаланс. задачи, вторые бессмысленны без указания порога (см. precision/recall в model card).
     auc = metrics["roc_auc"]
+    pr_auc = metrics["pr_auc"]
+    f1 = metrics["f1"]
     description = (
-        f"Good-wine (quality ≥ 7) classifier – precision {prec:.0%}, recall {rec:.0%}, "
-        f"ROC-AUC {auc:.2f} (extra-trees on {n_rows:,} wines)"
+        f"Good-wine (quality ≥ 7) classifier – ROC-AUC {auc:.2f}, PR-AUC {pr_auc:.2f}, F1 {f1:.2f} "
+        f"(extra-trees, tuned threshold, on {n_rows:,} wines)"
     )
     return ModelInfo(
         name="wine",
@@ -185,24 +205,30 @@ def main() -> None:
     y = to_labels(df[TARGET_COL])
     y_bin = (y == POSITIVE_LABEL).astype(int).to_numpy()
     good_share = float(y_bin.mean())
-    print(f"Обучение: {len(FEATURE_COLUMNS)} фич, ExtraTrees, строк={len(df)}, Good={good_share:.1%}")
+    print(f"Обучение: {len(FEATURE_COLUMNS)} фич, ExtraTrees+tuned threshold, строк={len(df)}, "
+          f"Good={good_share:.1%}")
 
-    # Оценка – по 5-fold OOF на ВСЕХ данных (устойчивее одиночного holdout из 345 строк, без утечки:
-    # каждая строка предсказывается моделью, обученной на других фолдах). proba[:,1] = класс Good.
+    # Ранжирующие метрики – по 5-fold OOF-вероятностям базовой модели (порог-независимо, без утечки).
     cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
-    oof_good = cross_val_predict(
+    base_proba = cross_val_predict(
         build_pipeline(), x, y_bin, cv=cv, method="predict_proba", n_jobs=-1
     )[:, 1]
-    metrics = compute_metrics(y_bin, oof_good)
+    # Операционная точка – ВЛОЖЕННАЯ CV: внешние фолды, внутри build_tuned сам подбирает порог на своих
+    # фолдах, поэтому precision/recall/F1 честные (порог не видит своих тестовых строк).
+    outer = StratifiedKFold(n_splits=5, shuffle=True, random_state=0)
+    tuned_pred = cross_val_predict(build_tuned(), x, y, cv=outer, n_jobs=-1)
+    metrics = compute_metrics(y_bin, base_proba, tuned_pred)
     metrics["n_rows"] = len(df)
-    metrics["eval"] = "5-fold OOF, threshold 0.5"
-    print(f"  precision={metrics['precision']:.3f}  recall={metrics['recall']:.3f}  "
-          f"F1={metrics['f1']:.3f}  ROC-AUC={metrics['roc_auc']:.3f}  PR-AUC={metrics['pr_auc']:.3f}  "
+    metrics["eval"] = "5-fold OOF (ranking) + nested-CV tuned threshold (operating point)"
+    print(f"  ROC-AUC={metrics['roc_auc']:.3f}  PR-AUC={metrics['pr_auc']:.3f}  F1={metrics['f1']:.3f}  "
+          f"precision={metrics['precision']:.3f}  recall={metrics['recall']:.3f}  "
           f"accuracy={metrics['accuracy']:.3f}")
 
-    # Финальная модель – на всех данных (строковые классы Good/Standard для UI).
-    final_model = build_pipeline()
+    # Финальная модель – на всех данных (строковые классы Good/Standard для UI); порог подобран внутри.
+    final_model = build_tuned()
     final_model.fit(x, y)
+    metrics["threshold"] = float(final_model.best_threshold_)
+    print(f"  подобранный порог = {metrics['threshold']:.3f}")
 
     info = build_model_info(specs, metrics, len(df))
     args.out.parent.mkdir(parents=True, exist_ok=True)
@@ -216,7 +242,7 @@ def main() -> None:
         "task": "classification",
         "target": f"quality >= {GOOD_THRESHOLD} ({GOOD_LABEL} vs {BAD_LABEL})",
         "classes": [BAD_LABEL, GOOD_LABEL],
-        "estimator": "ExtraTreesClassifier",
+        "estimator": "ExtraTreesClassifier + TunedThresholdClassifierCV (F1)",
         "features": FEATURE_COLUMNS,
         "metrics": metrics,
         "sklearn_version": sklearn.__version__,

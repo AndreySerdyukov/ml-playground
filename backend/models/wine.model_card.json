@@ -6,7 +6,7 @@
     "Standard",
     "Good"
   ],
-  "estimator": "ExtraTreesClassifier",
+  "estimator": "ExtraTreesClassifier + TunedThresholdClassifierCV (F1)",
   "features": [
     "fixed acidity",
     "volatile acidity",
@@ -21,20 +21,20 @@
     "alcohol"
   ],
   "metrics": {
-    "precision": 0.7067395264116576,
-    "recall": 0.627831715210356,
-    "f1": 0.6649528706083976,
     "roc_auc": 0.8481990159707423,
     "pr_auc": 0.7396102063641269,
-    "accuracy": 0.7733333333333333,
+    "precision": 0.6311053984575835,
+    "recall": 0.7944983818770227,
+    "f1": 0.7034383954154728,
+    "accuracy": 0.76,
     "confusion_matrix": [
       [
-        946,
-        161
+        820,
+        287
       ],
       [
-        230,
-        388
+        127,
+        491
       ]
     ],
     "labels": [
@@ -42,10 +42,11 @@
       "Good"
     ],
     "n_rows": 1725,
-    "eval": "5-fold OOF, threshold 0.5"
+    "eval": "5-fold OOF (ranking) + nested-CV tuned threshold (operating point)",
+    "threshold": 0.4062017803202416
   },
   "sklearn_version": "1.9.0",
   "dataset": "wine/train.csv",
   "n_rows": 1725,
-  "trained_at": "2026-07-28T10:16:02+00:00"
+  "trained_at": "2026-07-28T10:27:32+00:00"
 }
