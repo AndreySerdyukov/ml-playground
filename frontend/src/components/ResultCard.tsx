@@ -1,9 +1,9 @@
 import { useState } from "react";
 import type { FeatureSpec, ModelInfo, PredictResponse } from "../api";
 
-// Карточка результата: крупное значение + диапазон (регрессия) или классы, плюс echo введённых
-// признаков — так правая колонка не пустует и видно, что именно оценивали. Для бинарной
-// классификации показываем интерактивный слайдер порога: лейбл и precision/recall меняются вживую.
+// Result card: large value + range (regression) or classes, plus an echo of the entered
+// features - so the right column isn't empty and you can see exactly what was scored. For binary
+// classification we show an interactive threshold slider: the label and precision/recall update live.
 export function ResultCard({
   model,
   result,
@@ -13,9 +13,9 @@ export function ResultCard({
   result: PredictResponse | null;
   inputs?: Record<string, string> | null;
 }) {
-  // Порог решения (стартует с рабочего порога модели). Клампим в диапазон слайдера и округляем до
-  // шага, чтобы ручка стартовала «на насечке». Сброс на дефолт — при смене модели через remount
-  // PredictPanel (key=model.name), поэтому useEffect не нужен.
+  // Decision threshold (starts at the model's operating threshold). We clamp it to the slider range and round to
+  // the step so the handle starts "on a notch". Reset to default happens on model change via the remount of
+  // PredictPanel (key=model.name), so no useEffect is needed.
   const [threshold, setThreshold] = useState<number>(() =>
     clampThreshold(model.default_threshold ?? 0.5),
   );
@@ -30,10 +30,10 @@ export function ResultCard({
 
   const isRegression = result.task === "regression";
   const pred = Number(result.prediction);
-  // Диапазон вокруг оценки по типичной относительной ошибке модели (median APE).
+  // Range around the estimate based on the model's typical relative error (median APE).
   const err = isRegression ? model.typical_error_pct ?? null : null;
 
-  // Uplift-модель: числовой скор, но рисуем два сценария лечения + вердикт (метка category='Uplift').
+  // Uplift model: a numeric score, but we render the two treatment scenarios + a verdict (label category='Uplift').
   const isUplift = model.category === "Uplift" && !!result.scenarios;
   const pTreat = isUplift ? result.scenarios!["with_treatment"] ?? null : null;
   const pControl = isUplift ? result.scenarios!["without_treatment"] ?? null : null;
@@ -42,7 +42,7 @@ export function ResultCard({
     ? Object.entries(result.probabilities).sort((a, b) => b[1] - a[1])
     : [];
 
-  // Бинарная классификация с интерактивным порогом (модель отдала positive_class + 2 класса).
+  // Binary classification with an interactive threshold (model returned positive_class + 2 classes).
   const pos = model.positive_class ?? null;
   const isBinaryThresh =
     !isRegression &&
@@ -55,17 +55,17 @@ export function ResultCard({
   const negClass = isBinaryThresh
     ? Object.keys(result.probabilities!).find((c) => c !== pos)!
     : null;
-  // Лейбл решаем от выбранного порога (а не от предсказания бэкенда) — в этом суть слайдера.
+  // We derive the label from the chosen threshold (not from the backend's prediction) - that's the point of the slider.
   const label =
     isBinaryThresh && pPos != null ? (pPos >= threshold ? pos! : negClass!) : String(result.prediction);
-  // Uplift показываем в процентных пунктах со знаком («+3.7 pp»); иначе число (регр.) или класс.
+  // Uplift is shown in signed percentage points ("+3.7 pp"); otherwise a number (regression) or a class.
   const value = isUplift
     ? `${pred > 0 ? "+" : ""}${(pred * 100).toFixed(1)} pp`
     : isRegression
       ? formatNumber(pred)
       : label;
 
-  // Ближайшая точка кривой порога → precision/recall при выбранном пороге.
+  // Nearest point on the threshold curve → precision/recall at the chosen threshold.
   const curve = model.threshold_curve ?? null;
   const opPoint =
     isBinaryThresh && curve && curve.length
@@ -162,8 +162,8 @@ export function ResultCard({
       {probs.length > 0 && (
         <div className="mt-6 space-y-2.5">
           {probs.map(([cls, p]) => {
-            // Класс, который «выигрывает» при текущем пороге (совпадает с лейблом) — подсвечиваем,
-            // чтобы при пересечении маркера переключение было видно прямо на барах.
+            // The class that "wins" at the current threshold (matches the label) - we highlight it,
+            // so that when the marker crosses over the switch is visible right on the bars.
             const winning = isBinaryThresh && cls === label;
             return (
               <div key={cls}>
@@ -176,7 +176,7 @@ export function ResultCard({
                     className={`h-1.5 rounded-full ${isBinaryThresh && !winning ? "bg-ink/35" : "bg-ink"}`}
                     style={{ width: `${p * 100}%` }}
                   />
-                  {/* Маркер порога на баре positive-класса — видно, где проходит граница решения. */}
+                  {/* Threshold marker on the positive-class bar - shows where the decision boundary lies. */}
                   {isBinaryThresh && cls === pos && (
                     <span
                       className="absolute top-1/2 h-3 w-0.5 -translate-y-1/2 bg-ink"
@@ -215,17 +215,17 @@ function pct(x: number): string {
   return `${Math.round(x * 100)}%`;
 }
 
-// Порог в диапазон слайдера [0.05, 0.95] и на шаг 0.01 (ручка стартует ровно на насечке).
+// Clamp the threshold to the slider range [0.05, 0.95] and to a step of 0.01 (handle starts exactly on a notch).
 function clampThreshold(t: number): number {
   return Math.min(0.95, Math.max(0.05, Math.round(t * 100) / 100));
 }
 
-// Значение признака для echo: числа форматируем с разделителями и единицей.
+// Feature value for the echo: numbers are formatted with separators and a unit.
 function formatInput(f: FeatureSpec, raw: string | undefined): string {
   if (raw == null || raw === "") return "–";
   if (f.type === "number") {
     const n = Number(raw);
-    // Разделители тысяч только для крупных чисел – чтобы год (2012) не стал «2,012».
+    // Thousands separators only for large numbers - so a year (2012) doesn't become "2,012".
     const text = !Number.isFinite(n) ? raw : Math.abs(n) >= 10000 ? n.toLocaleString("en-US") : String(n);
     return f.unit ? `${text} ${f.unit}` : text;
   }

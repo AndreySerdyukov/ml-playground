@@ -1,4 +1,4 @@
-# Frontend: сборка Vite → раздача статики через nginx.
+# Frontend: Vite build → serving static files via nginx.
 FROM node:22-alpine AS build
 WORKDIR /app
 COPY package.json ./

@@ -1,1 +1,1 @@
-"""API-слой: тонкие FastAPI-роутеры, транслируют вызовы в services/."""
+"""API layer: thin FastAPI routers that forward calls into services/."""

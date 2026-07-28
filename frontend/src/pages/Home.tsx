@@ -3,7 +3,7 @@ import { ModelCard } from "../components/ModelCard";
 import { ModelIcon } from "../components/ModelIcon";
 import type { ModelInfo } from "../api";
 
-// Главная: хиро + сетка карточек моделей + секция фич.
+// Home page: hero + grid of model cards + features section.
 export function Home({
   models,
   loading,

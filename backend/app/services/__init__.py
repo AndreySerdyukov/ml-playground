@@ -1,1 +1,1 @@
-"""Слой бизнес-логики. НЕ импортирует FastAPI – тестируется изолированно."""
+"""Business-logic layer. Does NOT import FastAPI - tested in isolation."""

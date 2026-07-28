@@ -1,8 +1,8 @@
-"""Бизнес-логика инференса. Чистый слой: без импортов FastAPI.
+"""Inference business logic. A pure layer: no FastAPI imports.
 
-Отвечает за: валидацию набора фич под конкретную модель, сборку строки-признаков
-в правильном порядке колонок и вызов estimator'а. Ошибки – доменные исключения,
-которые api-слой транслирует в HTTP-коды.
+Responsible for: validating the feature set for a specific model, assembling the feature row
+in the correct column order, and calling the estimator. Errors are domain exceptions
+that the api layer translates into HTTP codes.
 """
 from __future__ import annotations
 
@@ -16,27 +16,27 @@ from app.schemas.predict import BatchPredictResponse, ModelInfo, PredictResponse
 
 
 class ModelNotFoundError(Exception):
-    """Запрошена модель, которой нет в реестре."""
+    """A model was requested that is not in the registry."""
 
 
 class InvalidFeaturesError(Exception):
-    """В запросе не хватает обязательных фич модели."""
+    """The request is missing required model features."""
 
 
 class InferenceService:
-    """Оркестрирует предсказание поверх реестра моделей."""
+    """Orchestrates prediction on top of the model registry."""
 
     def __init__(self, registry: ModelRegistry) -> None:
         self._registry = registry
 
     def list_models(self) -> list[ModelInfo]:
-        """Описания доступных моделей (для UI и API)."""
+        """Descriptions of available models (for the UI and API)."""
         return self._registry.list_infos()
 
     def predict(self, model_name: str, features: dict[str, object]) -> PredictResponse:
-        """Сделать предсказание моделью `model_name` по словарю фич.
+        """Make a prediction with model `model_name` from a feature dict.
 
-        Порядок колонок берём из метаописания модели – pipeline ожидает именно его.
+        The column order is taken from the model's metadata - the pipeline expects exactly that.
         """
         loaded = self._registry.get(model_name)
         if loaded is None:
@@ -45,7 +45,7 @@ class InferenceService:
         expected = [f.name for f in loaded.info.features]
         missing = [name for name in expected if name not in features]
         if missing:
-            raise InvalidFeaturesError(f"Не хватает фич: {', '.join(missing)}")
+            raise InvalidFeaturesError(f"Missing features: {', '.join(missing)}")
 
         row = pd.DataFrame([{name: features[name] for name in expected}])
         estimator = loaded.estimator
@@ -61,8 +61,8 @@ class InferenceService:
             )
 
         value = float(estimator.predict(row)[0])
-        # Uplift-модели (S-learner) дополнительно отдают вероятности исхода в двух сценариях лечения —
-        # их показывает «богатая» карточка. Прочие регрессоры этого метода не имеют → scenarios=None.
+        # Uplift models (S-learner) additionally return outcome probabilities in the two treatment scenarios -
+        # shown by the "rich" card. Other regressors do not have this method -> scenarios=None.
         scenarios = None
         if hasattr(estimator, "predict_scenarios"):
             p_treat, p_control = estimator.predict_scenarios(row)
@@ -77,22 +77,22 @@ class InferenceService:
     def predict_batch(
         self, model_name: str, records: list[dict[str, object]]
     ) -> BatchPredictResponse:
-        """Предсказание по многим строкам сразу (из загруженного CSV/Excel).
+        """Prediction over many rows at once (from an uploaded CSV/Excel).
 
-        Возвращает значения фич по строкам + колонку `prediction` (порядок строк сохраняется).
-        Числовые фичи приводятся к числам; пропуски и незнакомые категории покрывает пайплайн.
+        Returns feature values per row + a `prediction` column (row order is preserved).
+        Numeric features are coerced to numbers; missing values and unknown categories are handled by the pipeline.
         """
         loaded = self._registry.get(model_name)
         if loaded is None:
             raise ModelNotFoundError(model_name)
         if not records:
-            raise InvalidFeaturesError("Нет строк для предсказания")
+            raise InvalidFeaturesError("No rows to predict")
 
         expected = [f.name for f in loaded.info.features]
         frame = pd.DataFrame(records)
         missing = [name for name in expected if name not in frame.columns]
         if missing:
-            raise InvalidFeaturesError(f"В файле не хватает колонок: {', '.join(missing)}")
+            raise InvalidFeaturesError(f"The file is missing columns: {', '.join(missing)}")
 
         rows_in = frame[expected].copy()
         for feature in loaded.info.features:
@@ -104,7 +104,7 @@ class InferenceService:
         out_rows: list[dict[str, Any]] = []
         for i, record in enumerate(rows_in.to_dict("records")):
             row: dict[str, Any] = {name: self._cell(record[name]) for name in expected}
-            # 4 знака: у денежных таргетов хватает, а мелкие uplift-скоры (~0.01–0.05) не схлопываются.
+            # 4 digits: enough for monetary targets, and small uplift scores (~0.01-0.05) do not collapse.
             row["prediction"] = self._to_python(preds[i]) if is_cls else round(float(preds[i]), 4)
             out_rows.append(row)
 
@@ -120,7 +120,7 @@ class InferenceService:
 
     @staticmethod
     def _cell(value: object) -> object:
-        """Скаляр ячейки → JSON-совместимый тип (NaN/пропуск → None)."""
+        """Cell scalar -> a JSON-compatible type (NaN/missing -> None)."""
         if pd.isna(value):
             return None
         if isinstance(value, np.generic):
@@ -129,7 +129,7 @@ class InferenceService:
 
     @staticmethod
     def _extract_proba(estimator: object, row: pd.DataFrame) -> dict[str, float] | None:
-        """Вернуть вероятности по классам, если estimator их поддерживает."""
+        """Return per-class probabilities if the estimator supports them."""
         if not hasattr(estimator, "predict_proba"):
             return None
         proba = estimator.predict_proba(row)[0]
@@ -138,7 +138,7 @@ class InferenceService:
 
     @staticmethod
     def _to_python(value: object) -> float | int | str:
-        """Привести numpy-скаляр к нативному типу Python для сериализации."""
+        """Coerce a numpy scalar to a native Python type for serialization."""
         if isinstance(value, np.generic):
             return value.item()
         return value  # type: ignore[return-value]

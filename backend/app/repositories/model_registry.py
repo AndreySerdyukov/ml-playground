@@ -1,10 +1,10 @@
-"""Реестр моделей: грузит артефакты `*.joblib` из каталога `models/`.
+"""Model registry: loads `*.joblib` artifacts from the `models/` directory.
 
-Формат артефакта – dict:
+Artifact format - dict:
     {"model": <fitted sklearn estimator/pipeline>, "meta": {...ModelInfo...}}
 
-Это data-слой приложения: единственное место, которое знает, откуда берутся модели.
-Бизнес-логика инференса (`services/`) реестр только использует, но не знает про файлы.
+This is the application's data layer: the only place that knows where models come from.
+The inference business logic (`services/`) only uses the registry but knows nothing about the files.
 """
 from __future__ import annotations
 
@@ -19,21 +19,21 @@ from app.schemas.predict import ModelInfo
 
 @dataclass(frozen=True)
 class LoadedModel:
-    """Загруженная модель: сам estimator + её метаописание."""
+    """A loaded model: the estimator itself + its metadata description."""
 
     estimator: Any
     info: ModelInfo
 
 
 class ModelRegistry:
-    """Хранит модели в памяти, лениво читая их с диска при инициализации."""
+    """Keeps models in memory, reading them lazily from disk on initialization."""
 
     def __init__(self, models_dir: Path) -> None:
         self._models_dir = models_dir
         self._models: dict[str, LoadedModel] = {}
 
     def load(self) -> None:
-        """Прочитать все `*.joblib` из каталога моделей в память."""
+        """Read all `*.joblib` from the models directory into memory."""
         self._models.clear()
         if not self._models_dir.exists():
             return
@@ -43,9 +43,9 @@ class ModelRegistry:
             self._models[info.name] = LoadedModel(estimator=bundle["model"], info=info)
 
     def list_infos(self) -> list[ModelInfo]:
-        """Список описаний всех доступных моделей."""
+        """List of descriptions of all available models."""
         return [m.info for m in self._models.values()]
 
     def get(self, name: str) -> LoadedModel | None:
-        """Модель по имени либо None, если не найдена."""
+        """Model by name, or None if not found."""
         return self._models.get(name)

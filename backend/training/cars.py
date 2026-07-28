@@ -1,26 +1,26 @@
-"""Обучение и экспорт РЕАЛЬНОЙ модели «Cars» для ML Playground.
+"""Train and export the REAL "Cars" model for ML Playground.
 
-Исходные ноутбуки – в `notebooks/cars/`, данные (train/test) – в `data/cars/` (в самом репо).
-Препроцессинг в духе исходного ноутбука:
-    - числовые: SimpleImputer(median)
-    - категориальные: SimpleImputer(constant "Unknown") + OneHotEncoder(handle_unknown="ignore")
-    - таргет priceUSD учится в лог-пространстве (log1p/expm1 через TransformedTargetRegressor):
-      это оптимизирует ОТНОСИТЕЛЬНУЮ ошибку (под стать MAPE) и гарантирует положительную цену.
-Модель – компактный HistGradientBoostingRegressor: реальные веса, артефакт <1 МБ, обучение секунды.
+Source notebooks are in `notebooks/cars/`, data (train/test) is in `data/cars/` (inside the repo).
+Preprocessing follows the spirit of the source notebook:
+    - numeric: SimpleImputer(median)
+    - categorical: SimpleImputer(constant "Unknown") + OneHotEncoder(handle_unknown="ignore")
+    - the priceUSD target is learned in log space (log1p/expm1 via TransformedTargetRegressor):
+      this optimizes the RELATIVE error (in line with MAPE) and guarantees a positive price.
+Model - a compact HistGradientBoostingRegressor: real weights, artifact <1 MB, training in seconds.
 
-Домен демо – ОБЫЧНЫЕ б/у авто: строки `for parts`/`with damage` и абсурдные цена/пробег выкинуты
-(они дают дикую относительную ошибку и не интересны как «оценка машины»). Поэтому `condition`
-из признаков убран (в домене он константа). Метрика в карточке – МЕДИАННАЯ ошибка и доля
-попаданий (среднее MAPE раздувает дешёвый хвост; потолок этих фич по MAPE ~14%, см. progress).
+Demo domain - ORDINARY used cars: `for parts`/`with damage` rows and absurd price/mileage are dropped
+(they produce a wild relative error and are not interesting as a "car valuation"). Hence `condition`
+is removed from the features (within the domain it is a constant). The card metric is the MEDIAN error
+and the hit rate (mean MAPE inflates the cheap tail; the MAPE ceiling of these features is ~14%, see progress).
 
-Итог – бандл `{"model": <fitted pipeline>, "meta": ModelInfo(...).model_dump()}` в
-`backend/models/cars.joblib`; его читает реестр (`app/repositories/model_registry.py`),
-форма строится из `features`. Рядом – `cars.model_card.json` с метриками и провенансом.
-Этот файл – ЕДИНСТВЕННЫЙ источник истины для описания модели Cars (`ModelInfo`).
+Result - the bundle `{"model": <fitted pipeline>, "meta": ModelInfo(...).model_dump()}` in
+`backend/models/cars.joblib`; it is read by the registry (`app/repositories/model_registry.py`),
+the form is built from `features`. Alongside it - `cars.model_card.json` with metrics and provenance.
+This file is the SINGLE source of truth for describing the Cars model (`ModelInfo`).
 
-Запуск (из каталога backend, в .venv):
-    python training/cars.py                 # prod-набор, чистый домен (по умолчанию)
-    python training/cars.py --feature-set A --full   # все 11 фич, без фильтра домена
+Run (from the backend directory, in .venv):
+    python training/cars.py                 # prod set, clean domain (default)
+    python training/cars.py --feature-set A --full   # all 11 features, no domain filter
 """
 from __future__ import annotations
 
@@ -43,23 +43,23 @@ from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder
 
-# Делаем пакет `app` импортируемым при запуске файла напрямую (training/ -> backend/).
+# Make the `app` package importable when running the file directly (training/ -> backend/).
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.schemas.predict import FeatureSpec, ModelInfo
 
-# Колонка-таргет в датасете (в UI отображается как "price").
+# Target column in the dataset (displayed as "price" in the UI).
 TARGET_COL = "priceUSD"
-# Значение, которым imputer заполняет пропуски категорий (реальная обученная категория).
+# Value the imputer uses to fill missing categories (a real trained category).
 UNKNOWN_FILL = "Unknown"
 
-# Демо-домен: обычные б/у авто на ходу, без утиля/битых и абсурдных значений.
+# Demo domain: ordinary running used cars, without scrap/damaged and absurd values.
 DOMAIN_CONDITION = "with mileage"
 PRICE_MIN, PRICE_MAX = 500, 120_000
 MILEAGE_MAX = 700_000
 
-# Метаописание всех потенциальных колонок: тип поля + человекочитаемый лейбл/единица/пример.
-# `choices` для категорий НЕ хардкодим – берём из данных (гарантия совпадения с обученным OHE).
+# Metadata for all potential columns: field type + human-readable label/unit/example.
+# `choices` for categories are NOT hardcoded - we take them from the data (guarantees a match with the trained OHE).
 FEATURE_META: dict[str, dict[str, Any]] = {
     "company": {"kind": "cat", "label": "Make", "example": "volkswagen"},
     "model": {"kind": "cat", "label": "Model", "example": "passat"},
@@ -74,38 +74,38 @@ FEATURE_META: dict[str, dict[str, Any]] = {
     "vehicle_size_class": {"kind": "cat", "label": "Body class", "example": "D"},
 }
 
-# Наборы признаков. Порядок = порядок полей формы.
+# Feature sets. Order = order of form fields.
 FEATURE_SETS: dict[str, list[str]] = {
-    # prod (по умолчанию) – 10 фич без condition (домен отфильтрован на "with mileage").
+    # prod (default) - 10 features without condition (domain filtered to "with mileage").
     "prod": [
         "company", "model", "year", "mileage(km)", "volume(cm3)", "fuel",
         "transmission", "drive_unit", "color", "vehicle_size_class",
     ],
-    # A – полное воспроизведение: все 11 признаков (эксперимент, обычно с --full).
+    # A - full reproduction: all 11 features (experiment, usually with --full).
     "A": [
         "company", "model", "year", "mileage(km)", "volume(cm3)", "fuel",
         "transmission", "drive_unit", "condition", "color", "vehicle_size_class",
     ],
-    # B – курированная: без form-killers model/color.
+    # B - curated: without the form-killers model/color.
     "B": [
         "company", "year", "mileage(km)", "volume(cm3)", "fuel",
         "transmission", "drive_unit", "vehicle_size_class",
     ],
-    # C – как в исходной заглушке: ровно 6 полей.
+    # C - as in the original stub: exactly 6 fields.
     "C": ["company", "year", "mileage(km)", "fuel", "volume(cm3)", "transmission"],
 }
 
-# Данные лежат в самом репо: training/ -> backend/ -> repo-root(parents[2]) -> data/cars.
+# Data lives inside the repo: training/ -> backend/ -> repo-root(parents[2]) -> data/cars.
 DEFAULT_TRAIN_CSV = Path(__file__).resolve().parents[2] / "data" / "cars" / "train.csv"
 DEFAULT_OUT = Path(__file__).resolve().parents[1] / "models" / "cars.joblib"
 
 
 def load_data(csv_path: Path, clean_domain: bool = True) -> pd.DataFrame:
-    """Прочитать датасет, убрать дубли/без цены; опц. сузить до демо-домена обычных авто."""
+    """Read the dataset, drop duplicates/priceless rows; optionally narrow to the demo domain of ordinary cars."""
     df = pd.read_csv(csv_path)
     df = df.drop_duplicates()
     df = df.dropna(subset=[TARGET_COL])
-    # Отсекаем нулевые/битые цены: и модель портят, и MAPE делают бесконечной.
+    # Cut off zero/broken prices: they both spoil the model and make MAPE infinite.
     df = df[df[TARGET_COL] > 0]
     if clean_domain:
         df = df[
@@ -117,7 +117,7 @@ def load_data(csv_path: Path, clean_domain: bool = True) -> pd.DataFrame:
 
 
 def build_feature_specs(df: pd.DataFrame, columns: list[str]) -> list[FeatureSpec]:
-    """Собрать FeatureSpec для формы; choices категорий берём из уникальных значений данных."""
+    """Build FeatureSpec for the form; category choices are taken from the unique values in the data."""
     specs: list[FeatureSpec] = []
     for name in columns:
         meta = FEATURE_META[name]
@@ -130,8 +130,8 @@ def build_feature_specs(df: pd.DataFrame, columns: list[str]) -> list[FeatureSpe
             )
         else:
             choices = sorted(str(v) for v in df[name].dropna().unique())
-            # Если в колонке были пропуски – imputer обучил категорию UNKNOWN_FILL,
-            # даём её отдельной валидной опцией («не знаю»).
+            # If the column had missing values - the imputer trained the UNKNOWN_FILL category,
+            # expose it as a separate valid option ("don't know").
             if bool(df[name].isna().any()):
                 choices.append(UNKNOWN_FILL)
             specs.append(
@@ -146,7 +146,7 @@ def build_feature_specs(df: pd.DataFrame, columns: list[str]) -> list[FeatureSpe
 def build_pipeline(
     num_features: list[str], cat_features: list[str], estimator_name: str
 ) -> TransformedTargetRegressor:
-    """Препроцессинг + регрессор; таргет учится в лог-пространстве (относительная ошибка)."""
+    """Preprocessing + regressor; the target is learned in log space (relative error)."""
     numeric = SimpleImputer(strategy="median")
     categorical = Pipeline(
         steps=[
@@ -177,11 +177,11 @@ def build_pipeline(
         estimator = RandomForestRegressor(
             n_estimators=300, min_samples_split=5, n_jobs=-1, random_state=42
         )
-    else:  # pragma: no cover - защита от опечатки в аргументе
-        raise ValueError(f"Неизвестный estimator: {estimator_name}")
+    else:  # pragma: no cover - guard against a typo in the argument
+        raise ValueError(f"Unknown estimator: {estimator_name}")
 
     regressor = Pipeline(steps=[("preproc", preproc), ("estimator", estimator)])
-    # Лог-таргет: MSE в лог-пространстве ≈ относительная ошибка (под MAPE) + цена всегда > 0.
+    # Log target: MSE in log space ≈ relative error (in line with MAPE) + price is always > 0.
     return TransformedTargetRegressor(
         regressor=regressor, func=np.log1p, inverse_func=np.expm1
     )
@@ -190,7 +190,7 @@ def build_pipeline(
 def evaluate(
     model: TransformedTargetRegressor, x_test: pd.DataFrame, y_test: pd.Series
 ) -> dict[str, float]:
-    """Метрики на holdout: среднее MAPE, МЕДИАННАЯ ошибка, доля попаданий, MAE."""
+    """Holdout metrics: mean MAPE, MEDIAN error, hit rate, MAE."""
     pred = np.clip(model.predict(x_test), 1, None)
     y = y_test.to_numpy(dtype=float)
     ape = np.abs((y - pred) / y)
@@ -204,7 +204,7 @@ def evaluate(
 
 
 def build_model_info(specs: list[FeatureSpec], metrics: dict[str, float], n_train: int) -> ModelInfo:
-    """Карточка модели для реестра/формы (is_stub=False – бейдж «demo» исчезнет)."""
+    """Model card for the registry/form (is_stub=False - the "demo" badge disappears)."""
     median = metrics["median_ape"]
     within10 = metrics["within_10pct"]
     description = (
@@ -221,24 +221,24 @@ def build_model_info(specs: list[FeatureSpec], metrics: dict[str, float], n_trai
         is_stub=False,
         description=description,
         features=specs,
-        # Типичная относительная ошибка (median APE) – UI рисует диапазон вокруг оценки.
+        # Typical relative error (median APE) - the UI draws a range around the estimate.
         typical_error_pct=round(median, 3),
     )
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Обучить и экспортировать модель Cars.")
+    parser = argparse.ArgumentParser(description="Train and export the Cars model.")
     parser.add_argument("--train-csv", type=Path, default=DEFAULT_TRAIN_CSV)
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT)
     parser.add_argument("--estimator", choices=["hgb", "rf"], default="hgb")
     parser.add_argument("--feature-set", choices=list(FEATURE_SETS), default="prod")
     parser.add_argument(
-        "--full", action="store_true", help="не сужать домен (весь датасет, включая утиль/битые)"
+        "--full", action="store_true", help="do not narrow the domain (whole dataset, including scrap/damaged)"
     )
     args = parser.parse_args()
 
     if not args.train_csv.exists():
-        raise SystemExit(f"Не найден датасет: {args.train_csv}")
+        raise SystemExit(f"Dataset not found: {args.train_csv}")
 
     clean_domain = not args.full
     df = load_data(args.train_csv, clean_domain=clean_domain)
@@ -251,13 +251,13 @@ def main() -> None:
     y = df[TARGET_COL]
     x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
 
-    domain = "обычные авто" if clean_domain else "весь датасет"
+    domain = "ordinary cars" if clean_domain else "whole dataset"
     print(
-        f"Обучение: feature-set={args.feature_set} ({len(columns)} фич), estimator={args.estimator}, "
-        f"домен={domain}, строк={len(df)} (train={len(x_train)}, test={len(x_test)})"
+        f"Training: feature-set={args.feature_set} ({len(columns)} features), estimator={args.estimator}, "
+        f"domain={domain}, rows={len(df)} (train={len(x_train)}, test={len(x_test)})"
     )
 
-    # Оценка на holdout.
+    # Evaluation on holdout.
     eval_model = build_pipeline(num_features, cat_features, args.estimator)
     eval_model.fit(x_train, y_train)
     metrics = evaluate(eval_model, x_test, y_test)
@@ -268,7 +268,7 @@ def main() -> None:
         f"within10%={metrics['within_10pct']:.0%}  MAE={metrics['mae']:.0f} USD"
     )
 
-    # Финальная модель – на всех данных.
+    # Final model - on all data.
     final_model = build_pipeline(num_features, cat_features, args.estimator)
     final_model.fit(x, y)
 
@@ -276,9 +276,9 @@ def main() -> None:
     args.out.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump({"model": final_model, "meta": info.model_dump()}, args.out, compress=3)
     size_mb = args.out.stat().st_size / 1_048_576
-    print(f"  ✓ артефакт: {args.out}  ({size_mb:.2f} МБ)")
+    print(f"  ✓ artifact: {args.out}  ({size_mb:.2f} MB)")
 
-    # Model card (провенанс + метрики) рядом с артефактом; реестр читает только *.joblib.
+    # Model card (provenance + metrics) alongside the artifact; the registry reads only *.joblib.
     card = {
         "name": "cars",
         "task": "regression",
@@ -289,7 +289,7 @@ def main() -> None:
         "clean_domain": clean_domain,
         "metrics": metrics,
         "sklearn_version": sklearn.__version__,
-        # Только хвост пути – без абсолютного пути с юзернеймом (не тащим PII в репо).
+        # Only the path tail - without the absolute path containing the username (no PII in the repo).
         "dataset": str(Path(*args.train_csv.parts[-2:])),
         "n_rows": len(df),
         "trained_at": datetime.now(UTC).isoformat(timespec="seconds"),

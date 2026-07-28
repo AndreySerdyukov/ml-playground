@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 
-// Кастомный дропдаун (замена нативным select/datalist): единый стиль, поиск для длинных
-// списков (model=972, company=91), клавиатура и закрытие по клику вне.
+// Custom dropdown (replaces the native select/datalist): unified styling, search for long
+// lists (model=972, company=91), keyboard support and close-on-outside-click.
 const MAX_VISIBLE = 100;
 
 export function Combobox({
@@ -31,7 +31,7 @@ export function Combobox({
     return { visible: matched.slice(0, MAX_VISIBLE), total: matched.length };
   }, [options, query]);
 
-  // Закрытие по клику вне компонента.
+  // Close on click outside the component.
   useEffect(() => {
     if (!open) return;
     function onDoc(e: MouseEvent) {
@@ -41,7 +41,7 @@ export function Combobox({
     return () => document.removeEventListener("mousedown", onDoc);
   }, [open]);
 
-  // При открытии фокус на поиск и сброс подсветки.
+  // On open, focus the search field and reset the highlight.
   useEffect(() => {
     if (!open) return;
     setActive(0);

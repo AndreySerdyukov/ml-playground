@@ -1,4 +1,4 @@
-// Тонкий клиент к backend: типы совпадают с pydantic-схемами сервиса.
+// Thin client for the backend: types mirror the service's pydantic schemas.
 
 export type FeatureSpec = {
   name: string;
@@ -26,7 +26,7 @@ export type ModelInfo = {
   target_unit?: string | null;
   typical_error_pct?: number | null;
   is_stub: boolean;
-  // Только для бинарной классификации: интерактивный порог в UI.
+  // Binary classification only: interactive threshold in the UI.
   positive_class?: string | null;
   default_threshold?: number | null;
   threshold_curve?: ThresholdPoint[] | null;
@@ -37,7 +37,7 @@ export type PredictResponse = {
   task: "regression" | "classification";
   prediction: number | string;
   probabilities?: Record<string, number> | null;
-  // Для uplift: вероятности исхода в двух сценариях лечения (with_treatment / without_treatment).
+  // For uplift: outcome probabilities under the two treatment scenarios (with_treatment / without_treatment).
   scenarios?: Record<string, number> | null;
 };
 
@@ -75,7 +75,7 @@ export async function predict(
   return res.json();
 }
 
-// Батч-предикт: загружаем CSV/Excel, получаем предсказание по каждой строке.
+// Batch predict: upload a CSV/Excel file, get a prediction for each row.
 export async function predictBatch(
   modelName: string,
   file: File,

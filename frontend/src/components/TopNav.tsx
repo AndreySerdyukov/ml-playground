@@ -3,7 +3,7 @@ import type { ModelInfo } from "../api";
 import { ModelIcon } from "./ModelIcon";
 import { ThemeToggle } from "./ThemeToggle";
 
-// Стеклянный sticky-навбар: бренд слева, модели справа (переключение).
+// Glassy sticky navbar: brand on the left, models on the right (switching).
 export function TopNav({ models }: { models: ModelInfo[] }) {
   return (
     <header className="glass-nav sticky top-0 z-50 border-b border-hair">

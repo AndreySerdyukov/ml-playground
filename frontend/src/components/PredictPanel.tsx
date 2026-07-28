@@ -3,7 +3,7 @@ import type { ModelInfo } from "../api";
 import { BatchPredict } from "./BatchPredict";
 import { FeatureForm } from "./FeatureForm";
 
-// Переключатель режима предсказания: одиночный ввод или батч из файла.
+// Prediction mode toggle: single input or a batch from a file.
 export function PredictPanel({ model }: { model: ModelInfo }) {
   const [mode, setMode] = useState<"single" | "batch">("single");
   const tabs = [

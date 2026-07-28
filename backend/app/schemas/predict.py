@@ -1,32 +1,32 @@
-"""Схемы вход/выход для инференса и описания моделей."""
+"""Input/output schemas for inference and model descriptions."""
 from __future__ import annotations
 
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
-# Тип задачи модели (uplift моделируем как регрессию – числовой score).
+# Model task type (uplift is modeled as regression - a numeric score).
 TaskType = Literal["regression", "classification"]
 
 
 class FeatureSpec(BaseModel):
-    """Описание одной входной фичи (для автогенерации формы на фронте)."""
+    """Description of a single input feature (for auto-generating the form on the frontend)."""
 
     name: str
-    # Тип поля для UI: число или категория (выпадающий список).
+    # Field type for the UI: number or category (dropdown list).
     type: Literal["number", "category"]
-    # Допустимые значения для категориальной фичи.
+    # Allowed values for a categorical feature.
     choices: list[str] | None = None
-    # Человекочитаемая подпись поля.
+    # Human-readable field label.
     label: str | None = None
-    # Единица измерения (для подписи), напр. "USD", "km".
+    # Unit of measurement (for the label), e.g. "USD", "km".
     unit: str | None = None
-    # Значение по умолчанию для кнопки «Try an example».
+    # Default value for the "Try an example" button.
     example: float | str | None = None
 
 
 class ThresholdPoint(BaseModel):
-    """Точка кривой порога: precision/recall класса positive при данном пороге (по OOF)."""
+    """A threshold-curve point: precision/recall of the positive class at the given threshold (from OOF)."""
 
     threshold: float
     precision: float
@@ -34,61 +34,61 @@ class ThresholdPoint(BaseModel):
 
 
 class ModelInfo(BaseModel):
-    """Публичное описание модели в реестре (карточка каталога + форма)."""
+    """Public description of a model in the registry (catalog card + form)."""
 
     name: str
     task: TaskType
     target: str
     description: str = ""
     features: list[FeatureSpec] = Field(default_factory=list)
-    # Эмодзи-иконка для карточки каталога.
+    # Emoji icon for the catalog card.
     emoji: str = ""
-    # Отображаемая категория: "Regression" | "Classification" | "Uplift".
+    # Displayed category: "Regression" | "Classification" | "Uplift".
     category: str = ""
-    # Единица измерения таргета (для карточки результата).
+    # Unit of measurement of the target (for the result card).
     target_unit: str | None = None
-    # Типичная относит. ошибка регрессии (median APE, доля) – UI рисует диапазон вокруг оценки.
+    # Typical relative regression error (median APE, a fraction) - the UI draws a range around the estimate.
     typical_error_pct: float | None = None
-    # Заглушка ли это (веса ещё не подставлены) – UI покажет бейдж «demo».
+    # Whether this is a stub (weights not plugged in yet) - the UI shows a "demo" badge.
     is_stub: bool = False
-    # --- Только для БИНАРНОЙ классификации: интерактивный порог решения в UI ---
-    # Класс, к вероятности которого применяется порог (напр. "Good"). None → слайдера нет.
+    # --- BINARY classification only: interactive decision threshold in the UI ---
+    # The class to whose probability the threshold is applied (e.g. "Good"). None -> no slider.
     positive_class: str | None = None
-    # Рабочий порог модели (стартовое положение слайдера); None → 0.5.
+    # The model's working threshold (starting slider position); None -> 0.5.
     default_threshold: float | None = None
-    # Кривая порог→(precision, recall) по OOF – UI показывает метрики при выбранном пороге.
+    # Threshold->(precision, recall) curve from OOF - the UI shows metrics at the chosen threshold.
     threshold_curve: list[ThresholdPoint] | None = None
 
 
 class PredictRequest(BaseModel):
-    """Запрос на предсказание: имя модели + значения фич."""
+    """Prediction request: model name + feature values."""
 
     features: dict[str, Any]
 
 
 class PredictResponse(BaseModel):
-    """Ответ инференса."""
+    """Inference response."""
 
     model_name: str
     task: TaskType
-    # Предсказание: число (регрессия) или метка класса (классификация).
+    # Prediction: a number (regression) or a class label (classification).
     prediction: float | str | int
-    # Для классификации – вероятности по классам (если модель их отдаёт).
+    # For classification - per-class probabilities (if the model returns them).
     probabilities: dict[str, float] | None = None
-    # Для uplift – вероятности исхода в двух сценариях лечения (with_treatment / without_treatment);
-    # «богатая» карточка рисует обе шкалы и вердикт. У прочих моделей None.
+    # For uplift - outcome probabilities in the two treatment scenarios (with_treatment / without_treatment);
+    # the "rich" card draws both scales and a verdict. None for other models.
     scenarios: dict[str, float] | None = None
 
 
 class BatchPredictResponse(BaseModel):
-    """Ответ батч-предиктa: колонки-фичи + строки со значениями и предсказанием."""
+    """Batch predict response: feature columns + rows with values and a prediction."""
 
     model_name: str
     task: TaskType
     target: str
     target_unit: str | None = None
-    # Имена фич-колонок в порядке (заголовок таблицы результатов на фронте).
+    # Feature column names in order (the header of the results table on the frontend).
     columns: list[str]
-    # По строке: значения фич + ключ "prediction".
+    # Per row: feature values + a "prediction" key.
     rows: list[dict[str, Any]]
     count: int

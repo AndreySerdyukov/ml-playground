@@ -1,14 +1,14 @@
-"""Стаб-фабрика табличных моделей для веб-оболочки ML Playground.
+"""Stub factory for tabular models in the ML Playground web shell.
 
-Все 6 моделей (cars / loans / bayesian / wine / diamonds / uplift) теперь на РЕАЛЬНЫХ весах и
-собираются каждая в своём `training/<name>.py`. Стаб-заглушек не осталось → `MODELS` пуст.
+All 6 models (cars / loans / bayesian / wine / diamonds / uplift) now run on REAL weights and
+each is built in its own `training/<name>.py`. No stubs remain → `MODELS` is empty.
 
-Файл сохранён как точка входа для будущих демо-заглушек: добавить кортеж
-`(ModelInfo(..., is_stub=True), StubPredictor(...))` в `MODELS`, и артефакт
-`backend/models/<name>.joblib` соберётся тем же способом (позже заменяется обученным estimator'ом
-с тем же интерфейсом — реестр/фронт не трогаем).
+The file is kept as an entry point for future demo stubs: add a tuple
+`(ModelInfo(..., is_stub=True), StubPredictor(...))` to `MODELS`, and the artifact
+`backend/models/<name>.joblib` will be built the same way (later replaced by a trained estimator
+with the same interface - we don't touch the registry/frontend).
 
-Запуск (из каталога backend):  python scripts/build_stub_models.py
+Run (from the backend directory):  python scripts/build_stub_models.py
 """
 from __future__ import annotations
 
@@ -17,14 +17,14 @@ from pathlib import Path
 
 import joblib
 
-# Делаем пакет `app` импортируемым при запуске файла напрямую.
+# Make the `app` package importable when running the file directly.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.schemas.predict import ModelInfo
 from app.stub_predictor import StubPredictor
 
-# Описание стаб-моделей: (ModelInfo с is_stub=True) + параметры StubPredictor.
-# Сейчас пуст — все модели реальны (см. training/<name>.py). Пример заполнения — в истории git.
+# Stub model definitions: (ModelInfo with is_stub=True) + StubPredictor parameters.
+# Currently empty - all models are real (see training/<name>.py). An example of how to fill it is in git history.
 MODELS: list[tuple[ModelInfo, StubPredictor]] = []
 
 
@@ -35,7 +35,7 @@ def main() -> None:
         path = out_dir / f"{info.name}.joblib"
         joblib.dump({"model": predictor, "meta": info.model_dump()}, path)
         print(f"  ✓ {info.name:10s} → {path.name}")
-    print(f"Собрано заглушек: {len(MODELS)} (все модели на реальных весах)")
+    print(f"Stubs built: {len(MODELS)} (all models on real weights)")
 
 
 if __name__ == "__main__":

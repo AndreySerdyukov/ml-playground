@@ -1,23 +1,23 @@
-"""Обучение и экспорт РЕАЛЬНОЙ модели «Loans» (одобрение кредита) для ML Playground.
+"""Train and export the REAL "Loans" (credit approval) model for ML Playground.
 
-Исходные ноутбуки – в `notebooks/loans/`, данные (train/test) – в `data/loans/` (в самом репо).
-Задача – бинарная классификация: одобрить (`Approved`) или отклонить (`Rejected`) заявку.
-Данные АНОНИМИЗИРОВАНЫ: колонки безымянные (`C1, N2, C4_enc, …`), смысл скрыт для
-конфиденциальности. Все признаки подаём в модель как числа (`*_enc` – произвольные категор.
-коды, но древесные ансамбли это терпят) – ровно как в исходном ноутбуке.
+Source notebooks are in `notebooks/loans/`, data (train/test) in `data/loans/` (in the repo itself).
+The task is binary classification: approve (`Approved`) or reject (`Rejected`) an application.
+The data is ANONYMIZED: columns are nameless (`C1, N2, C4_enc, …`), meaning hidden for
+confidentiality. All features are fed to the model as numbers (`*_enc` are arbitrary categorical
+codes, but tree ensembles tolerate this) - exactly as in the original notebook.
 
-Модель воспроизводит финальный ноутбук `ML_Classification_Credits_Model.ipynb` –
-`StackingClassifier` из трёх базовых (GradientBoosting + AdaBoost + RandomForest) с
-LogisticRegression-мета (`stack_method="predict_proba"`). Сверху – `SimpleImputer(median)`
-на случай пропусков в живой форме. Целевая 1/0 маппится в строковые классы `Approved`/`Rejected`,
-чтобы UI подписал бары вероятностей человекочитаемо.
+The model reproduces the final notebook `ML_Classification_Credits_Model.ipynb` -
+a `StackingClassifier` of three base learners (GradientBoosting + AdaBoost + RandomForest) with
+a LogisticRegression meta-learner (`stack_method="predict_proba"`). On top - `SimpleImputer(median)`
+in case of missing values in the live form. The 1/0 target is mapped to string classes `Approved`/`Rejected`,
+so the UI labels the probability bars human-readably.
 
-Итог – бандл `{"model": <fitted pipeline>, "meta": ModelInfo(...).model_dump()}` в
-`backend/models/loans.joblib`; его читает реестр (`app/repositories/model_registry.py`),
-форма строится из `features`. Рядом – `loans.model_card.json` с метриками и провенансом.
-Этот файл – ЕДИНСТВЕННЫЙ источник истины для описания модели Loans (`ModelInfo`).
+The result is a bundle `{"model": <fitted pipeline>, "meta": ModelInfo(...).model_dump()}` in
+`backend/models/loans.joblib`; it is read by the registry (`app/repositories/model_registry.py`),
+and the form is built from `features`. Alongside is `loans.model_card.json` with metrics and provenance.
+This file is the SINGLE source of truth for the description of the Loans model (`ModelInfo`).
 
-Запуск (из каталога backend, в .venv):
+Run (from the backend directory, in .venv):
     python training/loans.py
 """
 from __future__ import annotations
@@ -54,40 +54,40 @@ from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeClassifier
 
-# Делаем пакет `app` импортируемым при запуске файла напрямую (training/ -> backend/).
+# Make the `app` package importable when running the file directly (training/ -> backend/).
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.schemas.predict import FeatureSpec, ModelInfo, ThresholdPoint
 
-# Колонка-таргет в датасете.
+# Target column in the dataset.
 TARGET_COL = "Target"
-# Целевая 1/0 -> человекочитаемые метки классов (их увидит UI).
+# 1/0 target -> human-readable class labels (the UI will show them).
 CLASS_LABELS: dict[float, str] = {1.0: "Approved", 0.0: "Rejected"}
-# Положительный класс для метрик (precision/recall/ROC-AUC).
+# Positive class for metrics (precision/recall/ROC-AUC).
 POSITIVE_LABEL = "Approved"
 
-# Признаки в порядке колонок датасета (= порядок полей формы). Все числовые.
-# Имена АНОНИМНЫЕ – показываем как есть (без выдуманных лейблов).
+# Features in dataset column order (= form field order). All numeric.
+# Names are ANONYMOUS - shown as is (without invented labels).
 FEATURE_COLUMNS: list[str] = [
     "C1", "N2", "N3", "C4_enc", "C5_enc", "C6_enc", "N7",
     "C8", "C9", "N10", "C11", "C12_enc", "N13", "N14",
 ]
 
-# Значения одной реальной (одобренной) строки train – для кнопки «Try an example».
-# Ключи держим в паре с FEATURE_COLUMNS (build_feature_specs читает по каждому имени).
+# Values of one real (approved) train row - for the "Try an example" button.
+# Keys are kept in sync with FEATURE_COLUMNS (build_feature_specs reads by each name).
 FEATURE_EXAMPLES: dict[str, float] = {
     "C1": 1.0, "N2": 28.0, "N3": 2.0, "C4_enc": 2.0, "C5_enc": 4.0,
     "C6_enc": 8.0, "N7": 4.165, "C8": 1.0, "C9": 1.0, "N10": 2.0,
     "C11": 1.0, "C12_enc": 2.0, "N13": 181.0, "N14": 1.0,
 }
 
-# Данные лежат в самом репо: training/ -> backend/ -> repo-root(parents[2]) -> data/loans.
+# Data lives in the repo itself: training/ -> backend/ -> repo-root(parents[2]) -> data/loans.
 DEFAULT_TRAIN_CSV = Path(__file__).resolve().parents[2] / "data" / "loans" / "train.csv"
 DEFAULT_OUT = Path(__file__).resolve().parents[1] / "models" / "loans.joblib"
 
 
 def load_data(csv_path: Path) -> pd.DataFrame:
-    """Прочитать датасет, убрать дубли и строки без таргета."""
+    """Read the dataset, drop duplicates and rows without a target."""
     df = pd.read_csv(csv_path)
     df = df.drop_duplicates()
     df = df.dropna(subset=[TARGET_COL])
@@ -95,7 +95,7 @@ def load_data(csv_path: Path) -> pd.DataFrame:
 
 
 def build_feature_specs() -> list[FeatureSpec]:
-    """FeatureSpec для формы: все 14 признаков – числовые, лейбл = сырое анонимное имя."""
+    """FeatureSpec for the form: all 14 features are numeric, label = raw anonymous name."""
     return [
         FeatureSpec(
             name=name, type="number", label=name, example=FEATURE_EXAMPLES[name]
@@ -105,10 +105,10 @@ def build_feature_specs() -> list[FeatureSpec]:
 
 
 def build_pipeline() -> Pipeline:
-    """Импьютер + стек-ансамбль (воспроизводит финальный ноутбук).
+    """Imputer + stacking ensemble (reproduces the final notebook).
 
-    Базовые: GradientBoosting / AdaBoost(стампы) / RandomForest; мета: StandardScaler+LogReg.
-    Гиперпараметры – из ноутбука; `random_state=42` добавлен для детерминированного артефакта.
+    Base learners: GradientBoosting / AdaBoost(stumps) / RandomForest; meta: StandardScaler+LogReg.
+    Hyperparameters are from the notebook; `random_state=42` added for a deterministic artifact.
     """
     grad = GradientBoostingClassifier(
         learning_rate=0.11,
@@ -129,14 +129,14 @@ def build_pipeline() -> Pipeline:
         random_state=42,
         n_jobs=-1,
     )
-    # sklearn 1.9: параметр называется `estimator` (`base_estimator` устарел в 1.2, удалён в 1.4).
+    # sklearn 1.9: the parameter is named `estimator` (`base_estimator` deprecated in 1.2, removed in 1.4).
     ada = AdaBoostClassifier(
         estimator=DecisionTreeClassifier(max_depth=1, random_state=42),
         n_estimators=200,
         learning_rate=0.1,
         random_state=42,
     )
-    # L1-регуляризация: в sklearn 1.9 `penalty="l1"` → `l1_ratio=1` (даёт те же коэффициенты).
+    # L1 regularization: in sklearn 1.9 `penalty="l1"` -> `l1_ratio=1` (gives the same coefficients).
     final_estimator = make_pipeline(
         StandardScaler(),
         LogisticRegression(C=1, l1_ratio=1, solver="liblinear", random_state=42),
@@ -146,7 +146,7 @@ def build_pipeline() -> Pipeline:
         final_estimator=final_estimator,
         stack_method="predict_proba",
     )
-    # Импьютер сверху – чтобы пропуск в живой форме не ронял инференс (в обучении данные полные).
+    # Imputer on top - so a missing value in the live form does not break inference (training data is complete).
     return Pipeline(
         steps=[
             ("imputer", SimpleImputer(strategy="median")),
@@ -156,13 +156,13 @@ def build_pipeline() -> Pipeline:
 
 
 def evaluate(model: Pipeline, x_test: pd.DataFrame, y_test: pd.Series) -> dict[str, Any]:
-    """Метрики на holdout: accuracy, ROC-AUC, precision/recall/F1 (класс Approved), матрица ошибок."""
+    """Holdout metrics: accuracy, ROC-AUC, precision/recall/F1 (class Approved), confusion matrix."""
     pred = model.predict(x_test)
     classes = list(model.classes_)
     pos_idx = classes.index(POSITIVE_LABEL)
     proba_pos = model.predict_proba(x_test)[:, pos_idx]
     y_true_bin = (y_test.to_numpy() == POSITIVE_LABEL).astype(int)
-    # Порядок меток для матрицы ошибок – единый источник истины CLASS_LABELS.
+    # Label order for the confusion matrix - the single source of truth CLASS_LABELS.
     labels = [CLASS_LABELS[0.0], CLASS_LABELS[1.0]]
     return {
         "accuracy": float(accuracy_score(y_test, pred)),
@@ -170,14 +170,14 @@ def evaluate(model: Pipeline, x_test: pd.DataFrame, y_test: pd.Series) -> dict[s
         "precision": float(precision_score(y_test, pred, pos_label=POSITIVE_LABEL)),
         "recall": float(recall_score(y_test, pred, pos_label=POSITIVE_LABEL)),
         "f1": float(f1_score(y_test, pred, pos_label=POSITIVE_LABEL)),
-        # Матрица ошибок в порядке labels=[Rejected, Approved].
+        # Confusion matrix in order labels=[Rejected, Approved].
         "confusion_matrix": confusion_matrix(y_test, pred, labels=labels).tolist(),
         "labels": labels,
     }
 
 
 def threshold_curve(y_bin: np.ndarray, proba_pos: np.ndarray) -> list[ThresholdPoint]:
-    """Кривая порог→(precision, recall) класса Approved по OOF-вероятностям – для слайдера в UI."""
+    """Threshold -> (precision, recall) curve for class Approved from OOF probabilities - for the UI slider."""
     pts: list[ThresholdPoint] = []
     for t in np.round(np.arange(0.05, 0.96, 0.05), 2):
         y_pred = (proba_pos >= t).astype(int)
@@ -194,10 +194,10 @@ def threshold_curve(y_bin: np.ndarray, proba_pos: np.ndarray) -> list[ThresholdP
 def build_model_info(
     specs: list[FeatureSpec], metrics: dict[str, Any], n_rows: int, curve: list[ThresholdPoint]
 ) -> ModelInfo:
-    """Карточка модели для реестра/формы (is_stub=False – бейдж «demo» исчезнет)."""
+    """Model card for the registry/form (is_stub=False - the "demo" badge disappears)."""
     auc = metrics["roc_auc"]
     acc = metrics["accuracy"]
-    # Метрики – с holdout; n_rows – размер датасета, на котором обучена финальная модель.
+    # Metrics - from holdout; n_rows - the size of the dataset the final model is trained on.
     description = (
         f"Credit approval classifier – ROC-AUC {auc:.2f}, accuracy {acc:.0%} "
         f"(stacked ensemble on {n_rows:,} anonymised applications)"
@@ -211,7 +211,7 @@ def build_model_info(
         is_stub=False,
         description=description,
         features=specs,
-        # Интерактивный порог в UI: класс-positive = Approved, слайдер стартует с argmax-порога 0.5.
+        # Interactive threshold in the UI: positive class = Approved, slider starts at the argmax threshold 0.5.
         positive_class=POSITIVE_LABEL,
         default_threshold=0.5,
         threshold_curve=curve,
@@ -219,13 +219,13 @@ def build_model_info(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Обучить и экспортировать модель Loans.")
+    parser = argparse.ArgumentParser(description="Train and export the Loans model.")
     parser.add_argument("--train-csv", type=Path, default=DEFAULT_TRAIN_CSV)
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT)
     args = parser.parse_args()
 
     if not args.train_csv.exists():
-        raise SystemExit(f"Не найден датасет: {args.train_csv}")
+        raise SystemExit(f"Dataset not found: {args.train_csv}")
 
     df = load_data(args.train_csv)
     specs = build_feature_specs()
@@ -233,17 +233,17 @@ def main() -> None:
     x = df[FEATURE_COLUMNS]
     y = df[TARGET_COL].astype(float).map(CLASS_LABELS)
     if y.isna().any():
-        raise SystemExit("В таргете есть значения вне {0, 1} – проверьте датасет.")
+        raise SystemExit("The target has values outside {0, 1} - check the dataset.")
 
     x_train, x_test, y_train, y_test = train_test_split(
         x, y, test_size=0.2, random_state=42, stratify=y
     )
     print(
-        f"Обучение: {len(FEATURE_COLUMNS)} фич, стек-ансамбль, "
-        f"строк={len(df)} (train={len(x_train)}, test={len(x_test)})"
+        f"Training: {len(FEATURE_COLUMNS)} features, stacking ensemble, "
+        f"rows={len(df)} (train={len(x_train)}, test={len(x_test)})"
     )
 
-    # Оценка на holdout.
+    # Holdout evaluation.
     eval_model = build_pipeline()
     eval_model.fit(x_train, y_train)
     metrics = evaluate(eval_model, x_test, y_test)
@@ -256,11 +256,11 @@ def main() -> None:
     )
     print(f"  confusion[Rejected/Approved]={metrics['confusion_matrix']}")
 
-    # Финальная модель – на всех данных.
+    # Final model - on all data.
     final_model = build_pipeline()
     final_model.fit(x, y)
 
-    # Кривая порог→(precision, recall) по 5-fold OOF – для интерактивного слайдера в UI.
+    # Threshold -> (precision, recall) curve from 5-fold OOF - for the interactive slider in the UI.
     y_bin = (y == POSITIVE_LABEL).astype(int).to_numpy()
     cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
     base_proba = cross_val_predict(
@@ -272,9 +272,9 @@ def main() -> None:
     args.out.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump({"model": final_model, "meta": info.model_dump()}, args.out, compress=3)
     size_mb = args.out.stat().st_size / 1_048_576
-    print(f"  ✓ артефакт: {args.out}  ({size_mb:.2f} МБ)")
+    print(f"  ✓ artifact: {args.out}  ({size_mb:.2f} MB)")
 
-    # Model card (провенанс + метрики) рядом с артефактом; реестр читает только *.joblib.
+    # Model card (provenance + metrics) alongside the artifact; the registry reads only *.joblib.
     card = {
         "name": "loans",
         "task": "classification",
@@ -284,7 +284,7 @@ def main() -> None:
         "features": FEATURE_COLUMNS,
         "metrics": metrics,
         "sklearn_version": sklearn.__version__,
-        # Только хвост пути – без абсолютного пути с юзернеймом (не тащим PII в репо).
+        # Only the path tail - without the absolute path containing the username (no PII in the repo).
         "dataset": str(Path(*args.train_csv.parts[-2:])),
         "n_rows": len(df),
         "trained_at": datetime.now(UTC).isoformat(timespec="seconds"),

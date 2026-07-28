@@ -1,9 +1,9 @@
-# Backend ML-инференса: FastAPI + uvicorn.
+# ML inference backend: FastAPI + uvicorn.
 FROM python:3.12-slim
 
 WORKDIR /app
 
-# Устанавливаем зависимости отдельным слоем для кэша.
+# Install dependencies in a separate layer for caching.
 COPY pyproject.toml ./
 RUN pip install --no-cache-dir \
         "fastapi>=0.111" "uvicorn[standard]>=0.30" "pydantic>=2.7" \

@@ -1,12 +1,12 @@
-"""S-learner (Treatment Dummy) для uplift-моделирования — serve-side обёртка.
+"""S-learner (Treatment Dummy) for uplift modeling - serve-side wrapper.
 
-Одна обученная модель классификации на признаках `[профиль + treatment_flg]`. Uplift для клиента =
-`P(покупка | SMS отправлен) − P(покупка | SMS не отправлен)` — два прогона того же классификатора с
-подставленным флагом лечения. Форма спрашивает только профиль клиента; сам флаг лечения не вводится.
+A single trained classification model on features `[profile + treatment_flg]`. Uplift for a customer =
+`P(purchase | SMS sent) - P(purchase | SMS not sent)` - two runs of the same classifier with the
+treatment flag substituted in. The form asks only for the customer profile; the treatment flag itself is not entered.
 
-Класс лежит в пакете `app`, чтобы joblib распиклил артефакт при загрузке реестром (та же причина, что
-и для StubPredictor). Интерфейс sklearn-совместимый: `predict(X)` возвращает вектор uplift; дополнительно
-`predict_scenarios(X)` отдаёт обе вероятности — их показывает «богатая» карточка результата.
+The class lives in the `app` package so that joblib unpickles the artifact when the registry loads it (the same reason as
+for StubPredictor). The interface is sklearn-compatible: `predict(X)` returns the uplift vector; additionally
+`predict_scenarios(X)` returns both probabilities - shown by the "rich" result card.
 """
 from __future__ import annotations
 
@@ -17,32 +17,32 @@ import pandas as pd
 
 
 class SoloModelUplift:
-    """Обёртка вокруг обученного классификатора: uplift как разность двух сценариев лечения."""
+    """Wrapper around a trained classifier: uplift as the difference of two treatment scenarios."""
 
     is_stub = False
-    # Задача для реестра/UI — числовой uplift-скор (регрессия). Категория помечает «богатую» карточку.
+    # Task for the registry/UI - a numeric uplift score (regression). The category flags the "rich" card.
     task = "regression"
 
     def __init__(
         self, estimator: Any, feature_names: list[str], treatment_col: str = "treatment_flg"
     ) -> None:
-        # estimator — обученный sklearn Pipeline на колонках [feature_names + treatment_col].
+        # estimator - a trained sklearn Pipeline on columns [feature_names + treatment_col].
         self.estimator = estimator
-        # Профильные фичи (в порядке формы), БЕЗ колонки лечения.
+        # Profile features (in form order), WITHOUT the treatment column.
         self.feature_names = list(feature_names)
         self.treatment_col = treatment_col
 
     def _proba_at(self, X: pd.DataFrame, flag: int) -> np.ndarray:
-        """P(target=1) при подставленном флаге лечения. Берём ровно профильные фичи (отсекаем лишние
-        колонки) и подставляем флаг — контракт обёртки явный, инференс не зависит от мусора во входе."""
+        """P(target=1) with the treatment flag substituted in. We take exactly the profile features (dropping extra
+        columns) and substitute the flag - the wrapper contract is explicit, and inference does not depend on junk in the input."""
         frame = X[self.feature_names].copy()
         frame[self.treatment_col] = flag
         return np.asarray(self.estimator.predict_proba(frame)[:, 1], dtype=float)
 
     def predict(self, X: pd.DataFrame) -> np.ndarray:
-        """Uplift-скор: P(покупка|лечение) − P(покупка|контроль)."""
+        """Uplift score: P(purchase|treatment) - P(purchase|control)."""
         return np.asarray(self._proba_at(X, 1) - self._proba_at(X, 0), dtype=float)
 
     def predict_scenarios(self, X: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
-        """Пара векторов (P покупки при SMS, P покупки без SMS) — для карточки результата."""
+        """A pair of vectors (P purchase with SMS, P purchase without SMS) - for the result card."""
         return self._proba_at(X, 1), self._proba_at(X, 0)

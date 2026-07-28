@@ -1,1 +1,1 @@
-"""Пакет backend-приложения ML-сервинга (шаблон)."""
+"""Backend application package for ML serving (template)."""

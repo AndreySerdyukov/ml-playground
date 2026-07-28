@@ -5,14 +5,14 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Семантические токены на CSS-переменных: значения флипаются под .dark (см. index.css).
-        canvas: "rgb(var(--canvas) / <alpha-value>)", // фон страницы
-        surface: "rgb(var(--surface) / <alpha-value>)", // поля/дропдауны/поднятые карточки
-        ink: "rgb(var(--ink) / <alpha-value>)", // основной текст / сплошные действия
-        slate: "rgb(var(--slate) / <alpha-value>)", // вторичный текст
-        mist: "rgb(var(--mist) / <alpha-value>)", // фон секций/карточек результата
-        hair: "rgb(var(--hair) / <alpha-value>)", // hairline-границы
-        link: "rgb(var(--link) / <alpha-value>)", // акцентный синий Apple
+        // Semantic tokens on CSS variables: values flip under .dark (see index.css).
+        canvas: "rgb(var(--canvas) / <alpha-value>)", // page background
+        surface: "rgb(var(--surface) / <alpha-value>)", // fields/dropdowns/raised cards
+        ink: "rgb(var(--ink) / <alpha-value>)", // primary text / solid actions
+        slate: "rgb(var(--slate) / <alpha-value>)", // secondary text
+        mist: "rgb(var(--mist) / <alpha-value>)", // background of sections/result cards
+        hair: "rgb(var(--hair) / <alpha-value>)", // hairline borders
+        link: "rgb(var(--link) / <alpha-value>)", // Apple accent blue
       },
       fontFamily: {
         sans: [

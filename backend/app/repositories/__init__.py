@@ -1,1 +1,1 @@
-"""Data-слой: загрузка обученных артефактов моделей."""
+"""Data layer: loading trained model artifacts."""

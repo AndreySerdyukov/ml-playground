@@ -1,1 +1,1 @@
-"""Pydantic-схемы запросов/ответов."""
+"""Pydantic schemas for requests/responses."""

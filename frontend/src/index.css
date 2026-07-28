@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 @layer base {
-  /* Светлая тема (по умолчанию). Значения – space-separated RGB для alpha-модификаторов Tailwind. */
+  /* Light theme (default). Values are space-separated RGB for Tailwind's alpha modifiers. */
   :root {
     --canvas: 255 255 255;
     --surface: 255 255 255;
@@ -14,7 +14,7 @@
     --link: 0 102 204;
     --nav-bg: 251 251 253;
   }
-  /* Тёмная тема (класс .dark на <html>). Apple-палитра: чёрный фон, #1c1c1e поверхности. */
+  /* Dark theme (.dark class on <html>). Apple palette: black background, #1c1c1e surfaces. */
   .dark {
     --canvas: 0 0 0;
     --surface: 28 28 30;
@@ -36,17 +36,17 @@
 }
 
 @layer components {
-  /* Стеклянный навбар в стиле Apple (фон флипается через переменную). */
+  /* Apple-style glassy navbar (background flips via a variable). */
   .glass-nav {
     background: rgb(var(--nav-bg) / 0.72);
     backdrop-filter: saturate(180%) blur(20px);
     -webkit-backdrop-filter: saturate(180%) blur(20px);
   }
-  /* Первичная кнопка-пилюля: заливка ink, текст – инверсия (canvas), чтобы читалась в обеих темах. */
+  /* Primary pill button: ink fill, text is the inverse (canvas) so it reads in both themes. */
   .btn-primary {
     @apply inline-flex items-center justify-center rounded-full bg-ink px-6 py-3 text-[17px] font-medium text-canvas transition hover:opacity-90 disabled:opacity-40;
   }
-  /* Поле ввода. */
+  /* Input field. */
   .field {
     @apply w-full rounded-xl border border-hair bg-surface px-4 py-2.5 text-[15px] text-ink outline-none transition focus:border-ink;
   }

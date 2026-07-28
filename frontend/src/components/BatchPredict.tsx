@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { predictBatch, type BatchPredictResponse, type ModelInfo } from "../api";
 
-// Батч-предикт: загрузка CSV/Excel → таблица предсказаний по строкам + выгрузка результата.
+// Batch predict: upload a CSV/Excel file → table of per-row predictions + download of the result.
 const PREVIEW_ROWS = 100;
 
 export function BatchPredict({ model }: { model: ModelInfo }) {
@@ -143,7 +143,7 @@ function toCell(v: unknown): CsvCell {
 
 function cell(v: unknown): string {
   if (v == null) return "–";
-  // Разделители тысяч только для крупных чисел – чтобы год (2012) не стал «2,012».
+  // Thousands separators only for large numbers - so a year (2012) doesn't become "2,012".
   if (typeof v === "number") return Math.abs(v) >= 10000 ? v.toLocaleString("en-US") : String(v);
   return String(v);
 }

@@ -1,21 +1,21 @@
-"""Обучение и экспорт РЕАЛЬНОЙ модели «Wine» (качество вина) для ML Playground.
+"""Train and export the REAL "Wine" (wine quality) model for ML Playground.
 
-Исходные ноутбуки – в `notebooks/wine/`, данные (train/test) – в `data/wine/` (в самом репо).
-Задача (как в ноутбуке) – БИНАРНАЯ: будет ли белое вино оценено на `quality >= 7` (класс `Good`)
-или ниже (`Standard`). Классы почти сбалансированы (~36% Good), поэтому важны и precision, и recall.
+Source notebooks are in `notebooks/wine/`, data (train/test) in `data/wine/` (in the repo itself).
+The task (as in the notebook) is BINARY: whether a white wine will be rated `quality >= 7` (class `Good`)
+or lower (`Standard`). The classes are nearly balanced (~36% Good), so both precision and recall matter.
 
-Ноутбук брал логистическую регрессию (линейная, ROC-AUC ≈ 0.82). Здесь модель – **ExtraTrees**
-(бэггинг случайных деревьев): на этом небольшом шумном датасете ансамбль ловит нелинейные
-взаимодействия (alcohol × density × сахар/SO₂) и поднимает всю precision/recall-кривую –
-ROC-AUC ≈ 0.85, PR-AUC ≈ 0.74; при 90% precision recall растёт с ~1.5% (логрег) до ~15%.
-Сверху `SimpleImputer(median)` – чтобы пропуск в живой форме не ронял инференс.
+The notebook used logistic regression (linear, ROC-AUC ≈ 0.82). Here the model is **ExtraTrees**
+(bagging of random trees): on this small noisy dataset the ensemble captures nonlinear
+interactions (alcohol × density × sugar/SO₂) and lifts the entire precision/recall curve -
+ROC-AUC ≈ 0.85, PR-AUC ≈ 0.74; at 90% precision recall grows from ~1.5% (logreg) to ~15%.
+On top, `SimpleImputer(median)` - so a missing value in the live form does not break inference.
 
-Итог – бандл `{"model": <fitted pipeline>, "meta": ModelInfo(...).model_dump()}` в
-`backend/models/wine.joblib`; его читает реестр (`app/repositories/model_registry.py`), форма
-строится из `features`. Рядом – `wine.model_card.json` с метриками и провенансом.
-Этот файл – ЕДИНСТВЕННЫЙ источник истины для описания модели Wine (`ModelInfo`).
+The result is a bundle `{"model": <fitted pipeline>, "meta": ModelInfo(...).model_dump()}` in
+`backend/models/wine.joblib`; it is read by the registry (`app/repositories/model_registry.py`), and the form
+is built from `features`. Alongside is `wine.model_card.json` with metrics and provenance.
+This file is the SINGLE source of truth for the description of the Wine model (`ModelInfo`).
 
-Запуск (из каталога backend, в .venv):
+Run (from the backend directory, in .venv):
     python training/wine.py
 """
 from __future__ import annotations
@@ -50,20 +50,20 @@ from sklearn.model_selection import (
 )
 from sklearn.pipeline import Pipeline
 
-# Делаем пакет `app` импортируемым при запуске файла напрямую (training/ -> backend/).
+# Make the `app` package importable when running the file directly (training/ -> backend/).
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.schemas.predict import FeatureSpec, ModelInfo, ThresholdPoint
 
-# Колонка-таргет и порог «хорошего» вина.
+# Target column and the threshold for "good" wine.
 TARGET_COL = "quality"
 GOOD_THRESHOLD = 7
-# Бинарная целевая -> человекочитаемые метки классов (их увидит UI).
+# Binary target -> human-readable class labels (the UI will show them).
 GOOD_LABEL, BAD_LABEL = "Good", "Standard"
 POSITIVE_LABEL = GOOD_LABEL
 
-# Метаописание 11 физико-химических признаков (все числовые). Примеры – медианы датасета
-# (белое вино), чтобы «Try an example» подставлял осмысленную реальную строку.
+# Meta-description of the 11 physico-chemical features (all numeric). Examples are dataset medians
+# (white wine), so "Try an example" fills a meaningful real row.
 FEATURE_META: dict[str, dict[str, Any]] = {
     "fixed acidity": {"label": "Fixed acidity", "unit": "g/L", "example": 6.8},
     "volatile acidity": {"label": "Volatile acidity", "unit": "g/L", "example": 0.27},
@@ -79,13 +79,13 @@ FEATURE_META: dict[str, dict[str, Any]] = {
 }
 FEATURE_COLUMNS: list[str] = list(FEATURE_META)
 
-# Данные лежат в самом репо: training/ -> backend/ -> repo-root(parents[2]) -> data/wine.
+# Data lives in the repo itself: training/ -> backend/ -> repo-root(parents[2]) -> data/wine.
 DEFAULT_TRAIN_CSV = Path(__file__).resolve().parents[2] / "data" / "wine" / "train.csv"
 DEFAULT_OUT = Path(__file__).resolve().parents[1] / "models" / "wine.joblib"
 
 
 def load_data(csv_path: Path) -> pd.DataFrame:
-    """Прочитать датасет, убрать дубли и строки без таргета."""
+    """Read the dataset, drop duplicates and rows without a target."""
     df = pd.read_csv(csv_path)
     df = df.drop_duplicates()
     df = df.dropna(subset=[TARGET_COL])
@@ -93,14 +93,14 @@ def load_data(csv_path: Path) -> pd.DataFrame:
 
 
 def to_labels(quality: pd.Series) -> pd.Series:
-    """Балл качества -> строковый класс Good/Standard (порог >= GOOD_THRESHOLD)."""
+    """Quality score -> string class Good/Standard (threshold >= GOOD_THRESHOLD)."""
     return pd.Series(
         np.where(quality.to_numpy() >= GOOD_THRESHOLD, GOOD_LABEL, BAD_LABEL), index=quality.index
     )
 
 
 def build_feature_specs() -> list[FeatureSpec]:
-    """FeatureSpec для формы: все 11 признаков – числовые (лейбл/единица/пример из FEATURE_META)."""
+    """FeatureSpec for the form: all 11 features are numeric (label/unit/example from FEATURE_META)."""
     return [
         FeatureSpec(
             name=name, type="number", label=meta["label"],
@@ -111,10 +111,10 @@ def build_feature_specs() -> list[FeatureSpec]:
 
 
 def build_pipeline() -> Pipeline:
-    """Импьютер + ExtraTrees (бэггинг деревьев – сильнее линейной модели на этом датасете)."""
+    """Imputer + ExtraTrees (tree bagging - stronger than a linear model on this dataset)."""
     return Pipeline(
         steps=[
-            # Импьютер сверху – чтобы пропуск в живой форме не ронял инференс (в данных NaN нет).
+            # Imputer on top - so a missing value in the live form does not break inference (no NaN in the data).
             ("imputer", SimpleImputer(strategy="median")),
             (
                 "clf",
@@ -131,10 +131,10 @@ def build_pipeline() -> Pipeline:
 
 
 def build_tuned() -> TunedThresholdClassifierCV:
-    """Базовый пайплайн + подстройка порога решения под максимум F1 (класс Good) через внутр. CV.
+    """Base pipeline + tuning the decision threshold for maximum F1 (class Good) via inner CV.
 
-    Порог 0.5 для 36%-миноритарного класса слишком строг – душит recall. Тюним по F1 (обычно ~0.4),
-    после чего `predict` использует подобранный порог; `predict_proba`/`classes_` доступны инференсу.
+    A 0.5 threshold is too strict for a 36% minority class - it throttles recall. We tune by F1 (usually ~0.4),
+    after which `predict` uses the selected threshold; `predict_proba`/`classes_` remain available to inference.
     """
     scorer = make_scorer(f1_score, pos_label=POSITIVE_LABEL)
     return TunedThresholdClassifierCV(
@@ -145,28 +145,28 @@ def build_tuned() -> TunedThresholdClassifierCV:
 def compute_metrics(
     y_bin: np.ndarray, base_proba_good: np.ndarray, tuned_pred: np.ndarray
 ) -> dict[str, Any]:
-    """Метрики честно по OOF: ранжирующие – из базовых вероятностей (порог-независимы), операционные
-    (precision/recall/F1/accuracy) – из предсказаний тюнингового классификатора (вложенная CV, порог
-    подобран на внутренних фолдах и не видит своих тестовых строк).
+    """Metrics honestly on OOF: ranking ones - from base probabilities (threshold-independent), operating
+    ones (precision/recall/F1/accuracy) - from the tuned classifier's predictions (nested CV, the threshold
+    is picked on inner folds and never sees its own test rows).
     """
     tuned_bin = (tuned_pred == POSITIVE_LABEL).astype(int)  # 1 = Good
     return {
-        # Ранжирование модели (не зависит от порога) – это и есть «насколько модель хороша».
+        # Model ranking (threshold-independent) - this is "how good the model is".
         "roc_auc": float(roc_auc_score(y_bin, base_proba_good)),
         "pr_auc": float(average_precision_score(y_bin, base_proba_good)),
-        # Операционная точка при подобранном пороге.
+        # Operating point at the selected threshold.
         "precision": float(precision_score(y_bin, tuned_bin, zero_division=0)),
         "recall": float(recall_score(y_bin, tuned_bin)),
         "f1": float(f1_score(y_bin, tuned_bin)),
         "accuracy": float(accuracy_score(y_bin, tuned_bin)),
-        # Матрица ошибок в порядке [Standard(0), Good(1)].
+        # Confusion matrix in order [Standard(0), Good(1)].
         "confusion_matrix": confusion_matrix(y_bin, tuned_bin, labels=[0, 1]).tolist(),
         "labels": [BAD_LABEL, GOOD_LABEL],
     }
 
 
 def threshold_curve(y_bin: np.ndarray, proba_good: np.ndarray) -> list[ThresholdPoint]:
-    """Кривая порог→(precision, recall) класса Good по OOF-вероятностям – для слайдера в UI."""
+    """Threshold -> (precision, recall) curve for class Good from OOF probabilities - for the UI slider."""
     pts: list[ThresholdPoint] = []
     for t in np.round(np.arange(0.05, 0.96, 0.05), 2):
         y_pred = (proba_good >= t).astype(int)
@@ -187,10 +187,10 @@ def build_model_info(
     default_threshold: float,
     curve: list[ThresholdPoint],
 ) -> ModelInfo:
-    """Карточка модели для реестра/формы (is_stub=False – бейдж «demo» исчезнет)."""
-    # Заголовок – порог-независимые ROC-AUC/PR-AUC (честная «сила» модели) + F1 (сводка precision/recall
-    # в подобранной точке). Accuracy и голые precision/recall в заголовок НЕ выносим: первая обманчива
-    # для несбаланс. задачи, вторые бессмысленны без указания порога (см. precision/recall в model card).
+    """Model card for the registry/form (is_stub=False - the "demo" badge disappears)."""
+    # Headline - threshold-independent ROC-AUC/PR-AUC (honest model "strength") + F1 (precision/recall summary
+    # at the selected point). Accuracy and bare precision/recall do NOT go into the headline: the first is misleading
+    # for an imbalanced task, the latter are meaningless without stating the threshold (see precision/recall in the model card).
     auc = metrics["roc_auc"]
     pr_auc = metrics["pr_auc"]
     f1 = metrics["f1"]
@@ -207,7 +207,7 @@ def build_model_info(
         is_stub=False,
         description=description,
         features=specs,
-        # Интерактивный порог в UI: слайдер стартует с подобранного порога, класс-positive = Good.
+        # Interactive threshold in the UI: slider starts at the selected threshold, positive class = Good.
         positive_class=POSITIVE_LABEL,
         default_threshold=round(default_threshold, 3),
         threshold_curve=curve,
@@ -215,13 +215,13 @@ def build_model_info(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Обучить и экспортировать модель Wine (качество).")
+    parser = argparse.ArgumentParser(description="Train and export the Wine (quality) model.")
     parser.add_argument("--train-csv", type=Path, default=DEFAULT_TRAIN_CSV)
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT)
     args = parser.parse_args()
 
     if not args.train_csv.exists():
-        raise SystemExit(f"Не найден датасет: {args.train_csv}")
+        raise SystemExit(f"Dataset not found: {args.train_csv}")
 
     df = load_data(args.train_csv)
     specs = build_feature_specs()
@@ -230,16 +230,16 @@ def main() -> None:
     y = to_labels(df[TARGET_COL])
     y_bin = (y == POSITIVE_LABEL).astype(int).to_numpy()
     good_share = float(y_bin.mean())
-    print(f"Обучение: {len(FEATURE_COLUMNS)} фич, ExtraTrees+tuned threshold, строк={len(df)}, "
+    print(f"Training: {len(FEATURE_COLUMNS)} features, ExtraTrees+tuned threshold, rows={len(df)}, "
           f"Good={good_share:.1%}")
 
-    # Ранжирующие метрики – по 5-fold OOF-вероятностям базовой модели (порог-независимо, без утечки).
+    # Ranking metrics - from 5-fold OOF probabilities of the base model (threshold-independent, no leakage).
     cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
     base_proba = cross_val_predict(
         build_pipeline(), x, y_bin, cv=cv, method="predict_proba", n_jobs=-1
     )[:, 1]
-    # Операционная точка – ВЛОЖЕННАЯ CV: внешние фолды, внутри build_tuned сам подбирает порог на своих
-    # фолдах, поэтому precision/recall/F1 честные (порог не видит своих тестовых строк).
+    # Operating point - NESTED CV: outer folds, and inside build_tuned picks the threshold on its own
+    # folds, so precision/recall/F1 are honest (the threshold does not see its own test rows).
     outer = StratifiedKFold(n_splits=5, shuffle=True, random_state=0)
     tuned_pred = cross_val_predict(build_tuned(), x, y, cv=outer, n_jobs=-1)
     metrics = compute_metrics(y_bin, base_proba, tuned_pred)
@@ -249,22 +249,22 @@ def main() -> None:
           f"precision={metrics['precision']:.3f}  recall={metrics['recall']:.3f}  "
           f"accuracy={metrics['accuracy']:.3f}")
 
-    # Финальная модель – на всех данных (строковые классы Good/Standard для UI); порог подобран внутри.
+    # Final model - on all data (string classes Good/Standard for the UI); threshold selected inside.
     final_model = build_tuned()
     final_model.fit(x, y)
     threshold = float(final_model.best_threshold_)
     metrics["threshold"] = threshold
-    print(f"  подобранный порог = {threshold:.3f}")
+    print(f"  selected threshold = {threshold:.3f}")
 
-    # Кривая порог→(precision, recall) по OOF – для интерактивного слайдера в UI.
+    # Threshold -> (precision, recall) curve from OOF - for the interactive slider in the UI.
     curve = threshold_curve(y_bin, base_proba)
     info = build_model_info(specs, metrics, len(df), threshold, curve)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump({"model": final_model, "meta": info.model_dump()}, args.out, compress=3)
     size_mb = args.out.stat().st_size / 1_048_576
-    print(f"  ✓ артефакт: {args.out}  ({size_mb:.2f} МБ)")
+    print(f"  ✓ artifact: {args.out}  ({size_mb:.2f} MB)")
 
-    # Model card (провенанс + метрики) рядом с артефактом; реестр читает только *.joblib.
+    # Model card (provenance + metrics) alongside the artifact; the registry reads only *.joblib.
     card = {
         "name": "wine",
         "task": "classification",
@@ -274,7 +274,7 @@ def main() -> None:
         "features": FEATURE_COLUMNS,
         "metrics": metrics,
         "sklearn_version": sklearn.__version__,
-        # Только хвост пути – без абсолютного пути с юзернеймом (не тащим PII в репо).
+        # Only the path tail - without the absolute path containing the username (no PII in the repo).
         "dataset": str(Path(*args.train_csv.parts[-2:])),
         "n_rows": len(df),
         "trained_at": datetime.now(UTC).isoformat(timespec="seconds"),
