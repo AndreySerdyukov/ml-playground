@@ -1,7 +1,7 @@
-"""Изолированные тесты бизнес-логики инференса (без FastAPI).
+"""Isolated tests for the inference business logic (without FastAPI).
 
-Собираем крошечные модели прямо в тесте, кладём как артефакты во временный каталог,
-поднимаем реестр + сервис и проверяем оба сценария (регрессия/классификация) и ошибки.
+We build tiny models right in the test, put them as artifacts in a temp directory,
+spin up the registry + service and check both scenarios (regression/classification) and errors.
 """
 from __future__ import annotations
 
@@ -21,8 +21,8 @@ from app.services.inference import (
 
 
 def _make_registry(tmp_path: Path) -> ModelRegistry:
-    """Создать реестр с двумя обученными игрушечными моделями."""
-    # Регрессия: y = 2*x.
+    """Create a registry with two trained toy models."""
+    # Regression: y = 2*x.
     reg = LinearRegression().fit(pd.DataFrame({"x": [0, 1, 2, 3]}), [0, 2, 4, 6])
     joblib.dump(
         {
@@ -36,7 +36,7 @@ def _make_registry(tmp_path: Path) -> ModelRegistry:
         },
         tmp_path / "doubler.joblib",
     )
-    # Классификация: класс = (x > 0).
+    # Classification: class = (x > 0).
     clf = LogisticRegression().fit(pd.DataFrame({"x": [-2, -1, 1, 2]}), ["neg", "neg", "pos", "pos"])
     joblib.dump(
         {

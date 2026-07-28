@@ -5,7 +5,7 @@ import { Home } from "./pages/Home";
 import { ModelPage } from "./pages/Model";
 import { fetchModels, type ModelInfo } from "./api";
 
-// Продуктовый порядок моделей в вебе (навбар + каталог), не алфавит из реестра. Неизвестные — в конец.
+// Product order of models on the web (navbar + catalog), not the registry's alphabetical order. Unknown ones go to the end.
 const MODEL_ORDER = ["cars", "wine", "diamonds", "loans", "uplift", "bayesian"];
 
 function orderModels(models: ModelInfo[]): ModelInfo[] {
@@ -16,7 +16,7 @@ function orderModels(models: ModelInfo[]): ModelInfo[] {
   return [...models].sort((a, b) => rank(a.name) - rank(b.name));
 }
 
-// Корневой лэйаут: стеклянный топ-навбар + маршруты + футер.
+// Root layout: glassy top navbar + routes + footer.
 export default function App() {
   const [models, setModels] = useState<ModelInfo[]>([]);
   const [error, setError] = useState<string | null>(null);

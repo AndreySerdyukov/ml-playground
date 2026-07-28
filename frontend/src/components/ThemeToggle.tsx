@@ -2,12 +2,12 @@ import { useEffect, useState } from "react";
 
 type Theme = "light" | "dark";
 
-// Стартовое значение берём из класса, уже выставленного анти-фликер скриптом в index.html.
+// Initial value comes from the class already set by the anti-flicker script in index.html.
 function currentTheme(): Theme {
   return document.documentElement.classList.contains("dark") ? "dark" : "light";
 }
 
-// Переключатель светлой/тёмной темы: флипает класс .dark на <html> и помнит выбор.
+// Light/dark theme toggle: flips the .dark class on <html> and remembers the choice.
 export function ThemeToggle() {
   const [theme, setTheme] = useState<Theme>(currentTheme);
 
@@ -16,7 +16,7 @@ export function ThemeToggle() {
     try {
       localStorage.setItem("theme", theme);
     } catch {
-      // приватный режим без localStorage – игнорируем
+      // private mode without localStorage - ignore
     }
   }, [theme]);
 
@@ -40,13 +40,13 @@ export function ThemeToggle() {
         aria-hidden="true"
       >
         {isDark ? (
-          // солнце → переключиться на светлую
+          // sun → switch to light
           <>
             <circle cx="12" cy="12" r="4" />
             <path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.1 5.1l1.4 1.4M17.5 17.5l1.4 1.4M18.9 5.1l-1.4 1.4M6.5 17.5l-1.4 1.4" />
           </>
         ) : (
-          // луна → переключиться на тёмную: сплошной серп (читается крупнее) + звёздочки
+          // moon → switch to dark: solid crescent (reads larger) + little stars
           <>
             <path
               d="M21 12.8A9 9 0 1 1 11.2 3 7.2 7.2 0 0 0 21 12.8Z"

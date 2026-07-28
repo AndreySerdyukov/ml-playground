@@ -1,7 +1,7 @@
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
-// Прокси /api на backend в dev-режиме, чтобы не упираться в CORS.
+// Proxy /api to the backend in dev mode to avoid running into CORS.
 export default defineConfig({
   plugins: [react()],
   server: {

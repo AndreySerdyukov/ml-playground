@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import type { ModelInfo } from "../api";
 import { ModelIcon } from "./ModelIcon";
 
-// Карточка модели в каталоге: эмодзи, название, категория/таргет, CTA.
+// Model card in the catalog: emoji, name, category/target, CTA.
 export function ModelCard({ model }: { model: ModelInfo }) {
   return (
     <Link

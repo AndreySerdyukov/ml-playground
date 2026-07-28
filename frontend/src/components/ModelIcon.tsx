@@ -1,5 +1,5 @@
-// Line-иконки из набора ml-design (~/personal/ml-playground/ml-design). Монохром, currentColor.
-// Ключи: логотип-глиф, 6 моделей и 3 фиче-иконки. Цвет/размер задаём через className.
+// Line icons from the ml-design set (~/personal/ml-playground/ml-design). Monochrome, currentColor.
+// Keys: logo glyph, 6 models and 3 feature icons. Color/size are set via className.
 const PATHS: Record<string, string[]> = {
   logo: [
     "M6.5 3.5h11a3 3 0 0 1 3 3v11a3 3 0 0 1-3 3h-11a3 3 0 0 1-3-3v-11a3 3 0 0 1 3-3z",

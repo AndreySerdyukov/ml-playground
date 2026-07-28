@@ -3,7 +3,7 @@ import { PredictPanel } from "../components/PredictPanel";
 import { ModelIcon } from "../components/ModelIcon";
 import type { ModelInfo } from "../api";
 
-// Страница модели: шапка + форма признаков + результат.
+// Model page: header + feature form + result.
 export function ModelPage({ models }: { models: ModelInfo[] }) {
   const { name } = useParams();
   const model = models.find((m) => m.name === name);

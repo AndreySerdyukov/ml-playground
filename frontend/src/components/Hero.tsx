@@ -1,4 +1,4 @@
-// Хиро-секция главной в стиле Apple: крупный заголовок + сабхед.
+// Apple-style hero section for the home page: large heading + subhead.
 export function Hero() {
   return (
     <section className="px-6 pt-20 pb-12 text-center sm:pt-24">

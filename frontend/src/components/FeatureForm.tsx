@@ -3,7 +3,7 @@ import { predict, type ModelInfo, type PredictResponse } from "../api";
 import { Combobox } from "./Combobox";
 import { ResultCard } from "./ResultCard";
 
-// Значения по умолчанию из примеров модели (форма приходит предзаполненной).
+// Default values from the model's examples (the form comes pre-filled).
 function initialValues(model: ModelInfo): Record<string, string> {
   const values: Record<string, string> = {};
   for (const f of model.features) {
@@ -12,7 +12,7 @@ function initialValues(model: ModelInfo): Record<string, string> {
   return values;
 }
 
-// Одиночный предикт: форма признаков + карточка результата. Ремоунтится по key={model.name}.
+// Single predict: feature form + result card. Remounts on key={model.name}.
 export function FeatureForm({ model }: { model: ModelInfo }) {
   const [values, setValues] = useState<Record<string, string>>(() => initialValues(model));
   const [result, setResult] = useState<PredictResponse | null>(null);

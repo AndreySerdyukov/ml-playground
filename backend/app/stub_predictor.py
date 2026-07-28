@@ -1,11 +1,11 @@
-"""Заглушка-предиктор для веб-оболочки (веса моделей ещё не подставлены).
+"""Stub predictor for the web shell (model weights are not plugged in yet).
 
-Даёт правдоподобный, **детерминированный от входа** ответ, чтобы весь поток
-UI → API → предсказание работал end-to-end ДО реальных весов. Позже этот объект
-заменяется обученным sklearn-estimator'ом (тот же интерфейс `predict`/`predict_proba`/
-`classes_`), и менять фронт/бэк не нужно.
+Produces a plausible, **input-deterministic** response so that the whole
+UI -> API -> prediction flow works end-to-end BEFORE the real weights exist. Later this object
+is replaced by a trained sklearn estimator (the same `predict`/`predict_proba`/
+`classes_` interface), with no need to change the frontend/backend.
 
-Класс лежит в пакете `app`, чтобы joblib мог распиклить артефакт при загрузке реестром.
+The class lives in the `app` package so that joblib can unpickle the artifact when the registry loads it.
 """
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ import pandas as pd
 
 
 class StubPredictor:
-    """Мини-предиктор с sklearn-подобным интерфейсом. Помечен `is_stub = True`."""
+    """Mini-predictor with a sklearn-like interface. Marked `is_stub = True`."""
 
     is_stub = True
 
@@ -26,14 +26,14 @@ class StubPredictor:
         scale: float = 1.0,
     ) -> None:
         self.task = task
-        # Атрибут в стиле sklearn – из него api берёт метки классов.
+        # sklearn-style attribute - the api reads class labels from it.
         self.classes_ = list(classes) if classes else None
         self._base = base
         self._scale = scale
 
     @staticmethod
     def _score(row: dict[str, object]) -> float:
-        """Стабильный числовой сигнал от строки признаков."""
+        """Stable numeric signal derived from a feature row."""
         total = 0.0
         for value in row.values():
             if isinstance(value, bool):
@@ -41,7 +41,7 @@ class StubPredictor:
             elif isinstance(value, (int, float)):
                 total += float(value)
             else:
-                # Категориальное – стабильный хэш в небольшой диапазон.
+                # Categorical - stable hash into a small range.
                 total += sum(ord(ch) for ch in str(value)) % 10
         return total
 

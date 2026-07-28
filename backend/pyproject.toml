@@ -1,19 +1,19 @@
 [project]
 name = "ml-serving-backend"
 version = "0.1.0"
-description = "Шаблон backend-сервиса ML-инференса (FastAPI, слоистая архитектура)"
+description = "Template for an ML inference backend service (FastAPI, layered architecture)"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.111",
     "uvicorn[standard]>=0.30",
     "pydantic>=2.7",
     "pydantic-settings>=2.3",
-    # Загрузка файлов (multipart) + чтение .xlsx для батч-предикта.
+    # File uploads (multipart) + reading .xlsx for batch predict.
     "python-multipart>=0.0.9",
     "openpyxl>=3.1",
     "joblib>=1.4",
-    # Пин минорной версии: обученный cars.joblib пиклится sklearn'ом и должен
-    # распаковываться той же минорной версией в рантайме (иначе ломается pickle).
+    # Pin the minor version: the trained cars.joblib is pickled by sklearn and must
+    # be unpickled by the same minor version at runtime (otherwise the pickle breaks).
     "scikit-learn~=1.9.0",
     "pandas>=2.2",
     "numpy>=1.26",
@@ -39,7 +39,7 @@ target-version = "py312"
 python_version = "3.12"
 strict = true
 
-# У sklearn/joblib/pandas нет type-стабов – не считаем это ошибкой при strict.
+# sklearn/joblib/pandas have no type stubs - don't treat this as an error under strict.
 [[tool.mypy.overrides]]
 module = ["sklearn.*", "joblib", "pandas"]
 ignore_missing_imports = true

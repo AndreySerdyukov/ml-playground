@@ -1,7 +1,7 @@
-"""Точка входа FastAPI: сборка приложения, CORS, реестр моделей.
+"""FastAPI entry point: application assembly, CORS, model registry.
 
-Реестр читается один раз на старте и кладётся в состояние приложения вместе с
-сервисом инференса – так api-слой получает готовую бизнес-логику без глобалей.
+The registry is read once at startup and stored in the application state together with
+the inference service - this way the api layer gets ready-made business logic without globals.
 """
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from app.services.inference import InferenceService
 
 
 def create_app() -> FastAPI:
-    """Фабрика приложения (удобно для тестов и переиспользования)."""
+    """Application factory (convenient for tests and reuse)."""
     settings = get_settings()
     app = FastAPI(title=settings.app_name)
 

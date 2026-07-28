@@ -1,4 +1,4 @@
-# Локальный запуск всего приложения: backend (FastAPI) + frontend (nginx со статикой).
+# Local run of the whole app: backend (FastAPI) + frontend (nginx serving static files).
 services:
   backend:
     build: ./backend

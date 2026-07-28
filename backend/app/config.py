@@ -1,6 +1,6 @@
-"""Конфигурация приложения через окружение (pydantic-settings).
+"""Application configuration via the environment (pydantic-settings).
 
-Секреты и параметры среды берём только из окружения/`.env`, никогда не хардкодим.
+Secrets and environment parameters are taken only from the environment/`.env`, never hardcoded.
 """
 from __future__ import annotations
 
@@ -11,19 +11,19 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    """Настройки сервиса. Значения переопределяются переменными окружения."""
+    """Service settings. Values are overridden by environment variables."""
 
     model_config = SettingsConfigDict(env_file=".env", env_prefix="APP_", extra="ignore")
 
-    # Человекочитаемое имя приложения (в /health и заголовках).
+    # Human-readable application name (in /health and headers).
     app_name: str = "ml-serving-app"
-    # Каталог с обученными артефактами моделей (*.joblib).
+    # Directory with trained model artifacts (*.joblib).
     models_dir: Path = Path(__file__).resolve().parent.parent / "models"
-    # Разрешённые CORS-источники (фронтенд). Список через запятую в APP_CORS_ORIGINS.
+    # Allowed CORS origins (frontend). Comma-separated list in APP_CORS_ORIGINS.
     cors_origins: list[str] = ["http://localhost:5173", "http://localhost:3000"]
 
 
 @lru_cache
 def get_settings() -> Settings:
-    """Синглтон настроек (кэшируется на процесс)."""
+    """Settings singleton (cached per process)."""
     return Settings()
