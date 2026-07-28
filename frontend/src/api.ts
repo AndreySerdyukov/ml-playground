@@ -9,6 +9,12 @@ export type FeatureSpec = {
   example?: number | string | null;
 };
 
+export type ThresholdPoint = {
+  threshold: number;
+  precision: number;
+  recall: number;
+};
+
 export type ModelInfo = {
   name: string;
   task: "regression" | "classification";
@@ -20,6 +26,10 @@ export type ModelInfo = {
   target_unit?: string | null;
   typical_error_pct?: number | null;
   is_stub: boolean;
+  // Только для бинарной классификации: интерактивный порог в UI.
+  positive_class?: string | null;
+  default_threshold?: number | null;
+  threshold_curve?: ThresholdPoint[] | null;
 };
 
 export type PredictResponse = {

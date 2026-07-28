@@ -8,7 +8,8 @@ price, wage, credit risk, uplift), with a clean Apple-inspired UI.
 > and Wine now run on real trained weights** (Cars — gradient boosting; Loans — a stacked ensemble;
 > Bayesian — a Bayesian linear regression; Wine — an extra-trees classifier); the remaining models are
 > illustrative stubs for now and plug in the same way, without touching the UI. Light **and dark** theme,
-> **single and batch (CSV/Excel)** prediction.
+> **single and batch (CSV/Excel)** prediction, and an **interactive decision-threshold slider** for
+> binary classifiers (the label and precision/recall update live as you drag).
 
 ## Stack
 - **Backend:** FastAPI, pydantic v2, joblib, scikit-learn (pinned `~=1.9`), pandas — layered

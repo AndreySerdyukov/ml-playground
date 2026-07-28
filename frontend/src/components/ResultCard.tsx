@@ -1,7 +1,9 @@
+import { useState } from "react";
 import type { FeatureSpec, ModelInfo, PredictResponse } from "../api";
 
 // Карточка результата: крупное значение + диапазон (регрессия) или классы, плюс echo введённых
-// признаков — так правая колонка не пустует и видно, что именно оценивали.
+// признаков — так правая колонка не пустует и видно, что именно оценивали. Для бинарной
+// классификации показываем интерактивный слайдер порога: лейбл и precision/recall меняются вживую.
 export function ResultCard({
   model,
   result,
@@ -11,6 +13,13 @@ export function ResultCard({
   result: PredictResponse | null;
   inputs?: Record<string, string> | null;
 }) {
+  // Порог решения (стартует с рабочего порога модели). Клампим в диапазон слайдера и округляем до
+  // шага, чтобы ручка стартовала «на насечке». Сброс на дефолт — при смене модели через remount
+  // PredictPanel (key=model.name), поэтому useEffect не нужен.
+  const [threshold, setThreshold] = useState<number>(() =>
+    clampThreshold(model.default_threshold ?? 0.5),
+  );
+
   if (!result) {
     return (
       <div className="flex items-center justify-center rounded-apple bg-mist p-8 text-center text-sm text-slate">
@@ -21,13 +30,39 @@ export function ResultCard({
 
   const isRegression = result.task === "regression";
   const pred = Number(result.prediction);
-  const value = isRegression ? formatNumber(pred) : String(result.prediction);
   // Диапазон вокруг оценки по типичной относительной ошибке модели (median APE).
   const err = isRegression ? model.typical_error_pct ?? null : null;
 
   const probs = result.probabilities
     ? Object.entries(result.probabilities).sort((a, b) => b[1] - a[1])
     : [];
+
+  // Бинарная классификация с интерактивным порогом (модель отдала positive_class + 2 класса).
+  const pos = model.positive_class ?? null;
+  const isBinaryThresh =
+    !isRegression &&
+    !!result.probabilities &&
+    !!pos &&
+    pos in result.probabilities &&
+    Object.keys(result.probabilities).length === 2;
+
+  const pPos = isBinaryThresh ? result.probabilities![pos!] : null;
+  const negClass = isBinaryThresh
+    ? Object.keys(result.probabilities!).find((c) => c !== pos)!
+    : null;
+  // Лейбл решаем от выбранного порога (а не от предсказания бэкенда) — в этом суть слайдера.
+  const label =
+    isBinaryThresh && pPos != null ? (pPos >= threshold ? pos! : negClass!) : String(result.prediction);
+  const value = isRegression ? formatNumber(pred) : label;
+
+  // Ближайшая точка кривой порога → precision/recall при выбранном пороге.
+  const curve = model.threshold_curve ?? null;
+  const opPoint =
+    isBinaryThresh && curve && curve.length
+      ? curve.reduce((best, p) =>
+          Math.abs(p.threshold - threshold) < Math.abs(best.threshold - threshold) ? p : best,
+        )
+      : null;
 
   return (
     <div className="rounded-apple bg-mist p-8">
@@ -52,6 +87,37 @@ export function ResultCard({
         </div>
       )}
 
+      {isBinaryThresh && (
+        <div className="mt-5">
+          <div className="flex items-baseline justify-between text-xs text-slate">
+            <span>Decision threshold</span>
+            <span className="tabular-nums text-ink">
+              P({pos}) ≥ {threshold.toFixed(2)}
+            </span>
+          </div>
+          <input
+            type="range"
+            min={0.05}
+            max={0.95}
+            step={0.01}
+            value={threshold}
+            onChange={(e) => setThreshold(Number(e.target.value))}
+            aria-label="Decision threshold"
+            className="mt-2 w-full accent-ink"
+          />
+          {opPoint && (
+            <div className="mt-1 flex justify-between text-xs text-slate">
+              <span>
+                precision <span className="tabular-nums text-ink">{pct(opPoint.precision)}</span>
+              </span>
+              <span>
+                recall <span className="tabular-nums text-ink">{pct(opPoint.recall)}</span>
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
       {probs.length > 0 && (
         <div className="mt-6 space-y-2.5">
           {probs.map(([cls, p]) => (
@@ -60,8 +126,15 @@ export function ResultCard({
                 <span>{cls}</span>
                 <span>{(p * 100).toFixed(1)}%</span>
               </div>
-              <div className="mt-1 h-1.5 w-full rounded-full bg-canvas">
+              <div className="relative mt-1 h-1.5 w-full rounded-full bg-canvas">
                 <div className="h-1.5 rounded-full bg-ink" style={{ width: `${p * 100}%` }} />
+                {/* Маркер порога на баре positive-класса — видно, где проходит граница решения. */}
+                {isBinaryThresh && cls === pos && (
+                  <span
+                    className="absolute top-1/2 h-3 w-0.5 -translate-y-1/2 bg-slate"
+                    style={{ left: `${threshold * 100}%` }}
+                  />
+                )}
               </div>
             </div>
           ))}
@@ -87,6 +160,15 @@ export function ResultCard({
       )}
     </div>
   );
+}
+
+function pct(x: number): string {
+  return `${Math.round(x * 100)}%`;
+}
+
+// Порог в диапазон слайдера [0.05, 0.95] и на шаг 0.01 (ручка стартует ровно на насечке).
+function clampThreshold(t: number): number {
+  return Math.min(0.95, Math.max(0.05, Math.round(t * 100) / 100));
 }
 
 // Значение признака для echo: числа форматируем с разделителями и единицей.

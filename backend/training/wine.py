@@ -53,7 +53,7 @@ from sklearn.pipeline import Pipeline
 # Делаем пакет `app` импортируемым при запуске файла напрямую (training/ -> backend/).
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from app.schemas.predict import FeatureSpec, ModelInfo
+from app.schemas.predict import FeatureSpec, ModelInfo, ThresholdPoint
 
 # Колонка-таргет и порог «хорошего» вина.
 TARGET_COL = "quality"
@@ -165,7 +165,28 @@ def compute_metrics(
     }
 
 
-def build_model_info(specs: list[FeatureSpec], metrics: dict[str, Any], n_rows: int) -> ModelInfo:
+def threshold_curve(y_bin: np.ndarray, proba_good: np.ndarray) -> list[ThresholdPoint]:
+    """Кривая порог→(precision, recall) класса Good по OOF-вероятностям – для слайдера в UI."""
+    pts: list[ThresholdPoint] = []
+    for t in np.round(np.arange(0.05, 0.96, 0.05), 2):
+        y_pred = (proba_good >= t).astype(int)
+        pts.append(
+            ThresholdPoint(
+                threshold=float(t),
+                precision=float(precision_score(y_bin, y_pred, zero_division=0)),
+                recall=float(recall_score(y_bin, y_pred, zero_division=0)),
+            )
+        )
+    return pts
+
+
+def build_model_info(
+    specs: list[FeatureSpec],
+    metrics: dict[str, Any],
+    n_rows: int,
+    default_threshold: float,
+    curve: list[ThresholdPoint],
+) -> ModelInfo:
     """Карточка модели для реестра/формы (is_stub=False – бейдж «demo» исчезнет)."""
     # Заголовок – порог-независимые ROC-AUC/PR-AUC (честная «сила» модели) + F1 (сводка precision/recall
     # в подобранной точке). Accuracy и голые precision/recall в заголовок НЕ выносим: первая обманчива
@@ -186,6 +207,10 @@ def build_model_info(specs: list[FeatureSpec], metrics: dict[str, Any], n_rows: 
         is_stub=False,
         description=description,
         features=specs,
+        # Интерактивный порог в UI: слайдер стартует с подобранного порога, класс-positive = Good.
+        positive_class=POSITIVE_LABEL,
+        default_threshold=round(default_threshold, 3),
+        threshold_curve=curve,
     )
 
 
@@ -227,10 +252,13 @@ def main() -> None:
     # Финальная модель – на всех данных (строковые классы Good/Standard для UI); порог подобран внутри.
     final_model = build_tuned()
     final_model.fit(x, y)
-    metrics["threshold"] = float(final_model.best_threshold_)
-    print(f"  подобранный порог = {metrics['threshold']:.3f}")
+    threshold = float(final_model.best_threshold_)
+    metrics["threshold"] = threshold
+    print(f"  подобранный порог = {threshold:.3f}")
 
-    info = build_model_info(specs, metrics, len(df))
+    # Кривая порог→(precision, recall) по OOF – для интерактивного слайдера в UI.
+    curve = threshold_curve(y_bin, base_proba)
+    info = build_model_info(specs, metrics, len(df), threshold, curve)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump({"model": final_model, "meta": info.model_dump()}, args.out, compress=3)
     size_mb = args.out.stat().st_size / 1_048_576

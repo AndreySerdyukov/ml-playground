@@ -30,6 +30,7 @@ from pathlib import Path
 from typing import Any
 
 import joblib
+import numpy as np
 import pandas as pd
 import sklearn
 from sklearn.ensemble import (
@@ -48,7 +49,7 @@ from sklearn.metrics import (
     recall_score,
     roc_auc_score,
 )
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import StratifiedKFold, cross_val_predict, train_test_split
 from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeClassifier
@@ -56,7 +57,7 @@ from sklearn.tree import DecisionTreeClassifier
 # Делаем пакет `app` импортируемым при запуске файла напрямую (training/ -> backend/).
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from app.schemas.predict import FeatureSpec, ModelInfo
+from app.schemas.predict import FeatureSpec, ModelInfo, ThresholdPoint
 
 # Колонка-таргет в датасете.
 TARGET_COL = "Target"
@@ -175,7 +176,24 @@ def evaluate(model: Pipeline, x_test: pd.DataFrame, y_test: pd.Series) -> dict[s
     }
 
 
-def build_model_info(specs: list[FeatureSpec], metrics: dict[str, Any], n_rows: int) -> ModelInfo:
+def threshold_curve(y_bin: np.ndarray, proba_pos: np.ndarray) -> list[ThresholdPoint]:
+    """Кривая порог→(precision, recall) класса Approved по OOF-вероятностям – для слайдера в UI."""
+    pts: list[ThresholdPoint] = []
+    for t in np.round(np.arange(0.05, 0.96, 0.05), 2):
+        y_pred = (proba_pos >= t).astype(int)
+        pts.append(
+            ThresholdPoint(
+                threshold=float(t),
+                precision=float(precision_score(y_bin, y_pred, zero_division=0)),
+                recall=float(recall_score(y_bin, y_pred, zero_division=0)),
+            )
+        )
+    return pts
+
+
+def build_model_info(
+    specs: list[FeatureSpec], metrics: dict[str, Any], n_rows: int, curve: list[ThresholdPoint]
+) -> ModelInfo:
     """Карточка модели для реестра/формы (is_stub=False – бейдж «demo» исчезнет)."""
     auc = metrics["roc_auc"]
     acc = metrics["accuracy"]
@@ -193,6 +211,10 @@ def build_model_info(specs: list[FeatureSpec], metrics: dict[str, Any], n_rows: 
         is_stub=False,
         description=description,
         features=specs,
+        # Интерактивный порог в UI: класс-positive = Approved, слайдер стартует с argmax-порога 0.5.
+        positive_class=POSITIVE_LABEL,
+        default_threshold=0.5,
+        threshold_curve=curve,
     )
 
 
@@ -238,7 +260,15 @@ def main() -> None:
     final_model = build_pipeline()
     final_model.fit(x, y)
 
-    info = build_model_info(specs, metrics, len(df))
+    # Кривая порог→(precision, recall) по 5-fold OOF – для интерактивного слайдера в UI.
+    y_bin = (y == POSITIVE_LABEL).astype(int).to_numpy()
+    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+    base_proba = cross_val_predict(
+        build_pipeline(), x, y_bin, cv=cv, method="predict_proba", n_jobs=-1
+    )[:, 1]
+    curve = threshold_curve(y_bin, base_proba)
+
+    info = build_model_info(specs, metrics, len(df), curve)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump({"model": final_model, "meta": info.model_dump()}, args.out, compress=3)
     size_mb = args.out.stat().st_size / 1_048_576

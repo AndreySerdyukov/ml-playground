@@ -25,6 +25,14 @@ class FeatureSpec(BaseModel):
     example: float | str | None = None
 
 
+class ThresholdPoint(BaseModel):
+    """Точка кривой порога: precision/recall класса positive при данном пороге (по OOF)."""
+
+    threshold: float
+    precision: float
+    recall: float
+
+
 class ModelInfo(BaseModel):
     """Публичное описание модели в реестре (карточка каталога + форма)."""
 
@@ -43,6 +51,13 @@ class ModelInfo(BaseModel):
     typical_error_pct: float | None = None
     # Заглушка ли это (веса ещё не подставлены) – UI покажет бейдж «demo».
     is_stub: bool = False
+    # --- Только для БИНАРНОЙ классификации: интерактивный порог решения в UI ---
+    # Класс, к вероятности которого применяется порог (напр. "Good"). None → слайдера нет.
+    positive_class: str | None = None
+    # Рабочий порог модели (стартовое положение слайдера); None → 0.5.
+    default_threshold: float | None = None
+    # Кривая порог→(precision, recall) по OOF – UI показывает метрики при выбранном пороге.
+    threshold_curve: list[ThresholdPoint] | None = None
 
 
 class PredictRequest(BaseModel):
