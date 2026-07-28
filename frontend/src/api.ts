@@ -37,6 +37,8 @@ export type PredictResponse = {
   task: "regression" | "classification";
   prediction: number | string;
   probabilities?: Record<string, number> | null;
+  // Для uplift: вероятности исхода в двух сценариях лечения (with_treatment / without_treatment).
+  scenarios?: Record<string, number> | null;
 };
 
 export type BatchPredictResponse = {

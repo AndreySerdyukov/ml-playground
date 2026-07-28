@@ -33,6 +33,11 @@ export function ResultCard({
   // Диапазон вокруг оценки по типичной относительной ошибке модели (median APE).
   const err = isRegression ? model.typical_error_pct ?? null : null;
 
+  // Uplift-модель: числовой скор, но рисуем два сценария лечения + вердикт (метка category='Uplift').
+  const isUplift = model.category === "Uplift" && !!result.scenarios;
+  const pTreat = isUplift ? result.scenarios!["with_treatment"] ?? null : null;
+  const pControl = isUplift ? result.scenarios!["without_treatment"] ?? null : null;
+
   const probs = result.probabilities
     ? Object.entries(result.probabilities).sort((a, b) => b[1] - a[1])
     : [];
@@ -53,7 +58,12 @@ export function ResultCard({
   // Лейбл решаем от выбранного порога (а не от предсказания бэкенда) — в этом суть слайдера.
   const label =
     isBinaryThresh && pPos != null ? (pPos >= threshold ? pos! : negClass!) : String(result.prediction);
-  const value = isRegression ? formatNumber(pred) : label;
+  // Uplift показываем в процентных пунктах со знаком («+3.7 pp»); иначе число (регр.) или класс.
+  const value = isUplift
+    ? `${pred > 0 ? "+" : ""}${(pred * 100).toFixed(1)} pp`
+    : isRegression
+      ? formatNumber(pred)
+      : label;
 
   // Ближайшая точка кривой порога → precision/recall при выбранном пороге.
   const curve = model.threshold_curve ?? null;
@@ -69,12 +79,43 @@ export function ResultCard({
       <p className="text-sm capitalize text-slate">{model.target}</p>
       <p className="mt-1 text-4xl font-semibold tracking-tight text-ink">
         {value}
-        {isRegression && model.target_unit ? (
+        {isRegression && !isUplift && model.target_unit ? (
           <span className="ml-1 text-xl text-slate">{model.target_unit}</span>
         ) : null}
       </p>
 
-      {err != null && (
+      {isUplift && pTreat != null && pControl != null && (
+        <div className="mt-5 space-y-2.5">
+          {[
+            { label: "Buy if SMS sent", p: pTreat, strong: true },
+            { label: "Buy if no SMS", p: pControl, strong: false },
+          ].map((s) => (
+            <div key={s.label}>
+              <div className="flex justify-between text-xs">
+                <span className={s.strong ? "font-medium text-ink" : "text-slate"}>{s.label}</span>
+                <span className="tabular-nums text-slate">{(s.p * 100).toFixed(1)}%</span>
+              </div>
+              <div className="mt-1 h-1.5 w-full rounded-full bg-canvas">
+                <div
+                  className={`h-1.5 rounded-full ${s.strong ? "bg-ink" : "bg-ink/35"}`}
+                  style={{ width: `${s.p * 100}%` }}
+                />
+              </div>
+            </div>
+          ))}
+          <div className="pt-1">
+            {pred > 0 ? (
+              <span className="inline-flex items-center rounded-full bg-ink px-3 py-1 text-xs font-medium text-canvas">
+                Target this customer
+              </span>
+            ) : (
+              <span className="text-xs text-slate">Not worth targeting (no lift)</span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {err != null && !isUplift && (
         <div className="mt-5">
           <p className="text-xs text-slate">±{Math.round(err * 100)}% typical range</p>
           <div className="relative mt-2 h-2 rounded-full bg-gradient-to-r from-hair via-ink/25 to-hair">

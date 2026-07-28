@@ -41,13 +41,13 @@ cd backend
 uv venv --python 3.12
 uv pip install fastapi "uvicorn[standard]" pydantic pydantic-settings joblib "scikit-learn~=1.9.0" \
   pandas numpy python-multipart openpyxl pytest
-python scripts/build_stub_models.py        # 1 demo stub artifact (uplift); the rest are real
 python training/cars.py                    # train the real Cars model from data/cars/ → cars.joblib
 python training/loans.py                   # train the real Loans model from data/loans/ → loans.joblib
 python training/bayesian.py                # train the real Bayesian wage model → bayesian.joblib
 python training/wine.py                    # train the real Wine (good ≥ 7) model → wine.joblib
 python training/diamonds.py                # train the real Diamonds price model → diamonds.joblib
-uv run uvicorn app.main:app --reload       # :8000
+python training/uplift.py                  # train the real Uplift S-learner → uplift.joblib
+uv run uvicorn app.main:app --reload       # :8000  (all 6 models are real; no stubs left)
 
 # Frontend (another terminal)
 cd frontend
@@ -60,8 +60,8 @@ docker compose up --build                  # frontend :3000, backend :8000
 ```
 
 ## Models (catalog)
-**Wine (good ≥ 7 — real weights)** · **Diamonds (price — real weights)** · **Cars (price — real weights)** ·
-**Bayesian (wage — real weights)** · **Loans (credit approval — real weights)** · Uplift (uplift score).
+All six models run on real trained weights: **Wine** (good ≥ 7) · **Diamonds** (price) · **Cars** (price) ·
+**Bayesian** (wage) · **Loans** (credit approval) · **Uplift** (incremental SMS effect, S-learner).
 
 ## API
 - `GET /health` — liveness.

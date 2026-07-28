@@ -61,7 +61,18 @@ class InferenceService:
             )
 
         value = float(estimator.predict(row)[0])
-        return PredictResponse(model_name=model_name, task="regression", prediction=value)
+        # Uplift-модели (S-learner) дополнительно отдают вероятности исхода в двух сценариях лечения —
+        # их показывает «богатая» карточка. Прочие регрессоры этого метода не имеют → scenarios=None.
+        scenarios = None
+        if hasattr(estimator, "predict_scenarios"):
+            p_treat, p_control = estimator.predict_scenarios(row)
+            scenarios = {
+                "with_treatment": float(p_treat[0]),
+                "without_treatment": float(p_control[0]),
+            }
+        return PredictResponse(
+            model_name=model_name, task="regression", prediction=value, scenarios=scenarios
+        )
 
     def predict_batch(
         self, model_name: str, records: list[dict[str, object]]
@@ -93,7 +104,8 @@ class InferenceService:
         out_rows: list[dict[str, Any]] = []
         for i, record in enumerate(rows_in.to_dict("records")):
             row: dict[str, Any] = {name: self._cell(record[name]) for name in expected}
-            row["prediction"] = self._to_python(preds[i]) if is_cls else round(float(preds[i]), 2)
+            # 4 знака: у денежных таргетов хватает, а мелкие uplift-скоры (~0.01–0.05) не схлопываются.
+            row["prediction"] = self._to_python(preds[i]) if is_cls else round(float(preds[i]), 4)
             out_rows.append(row)
 
         return BatchPredictResponse(

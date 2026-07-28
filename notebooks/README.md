@@ -17,6 +17,10 @@ Source research notebooks behind the trained models, one folder per model.
   - `diamonds_outlier_fix.ipynb` – the outlier-handling lesson: reproduces the flawed IQR-on-target
     filter (inflates MAPE) vs the correct split-first, clean-only-on-train pipeline (MAPE ≈ 6.9%,
     beating the group best 7.31%). Source coursework notebooks: `~/personal/ML-projects/Diamonds/`.
+- `uplift/` – incremental SMS-effect modeling (X5 Retail Hero)
+  - `uplift_solomodel.ipynb` – S-learner (Treatment Dummy) with honest Qini/uplift@k on the real A/B
+    (not the proxy file the original used); shows the uplift score varies and targeting beats random
+    (Qini ≈ 0.08, top-decile ≈ 10pp vs 3.3pp average). Source project: `~/personal/ML-projects/Uplift/`.
 
 The **production** training that ships weights into the app is the standalone script
 `backend/training/<model>.py` (reads `data/<model>/`, writes `backend/models/<model>.joblib`). The

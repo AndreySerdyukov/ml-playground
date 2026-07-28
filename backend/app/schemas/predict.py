@@ -75,6 +75,9 @@ class PredictResponse(BaseModel):
     prediction: float | str | int
     # Для классификации – вероятности по классам (если модель их отдаёт).
     probabilities: dict[str, float] | None = None
+    # Для uplift – вероятности исхода в двух сценариях лечения (with_treatment / without_treatment);
+    # «богатая» карточка рисует обе шкалы и вердикт. У прочих моделей None.
+    scenarios: dict[str, float] | None = None
 
 
 class BatchPredictResponse(BaseModel):

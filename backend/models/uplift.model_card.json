@@ -1,0 +1,34 @@
+{
+  "name": "uplift",
+  "task": "regression",
+  "target": "target",
+  "approach": "S-learner (Treatment Dummy), HistGradientBoostingClassifier",
+  "features": [
+    "age",
+    "gender",
+    "issue_redeem_days_diff",
+    "total_purchase_count",
+    "total_purchase_sum",
+    "avg_purchase_sum",
+    "avg_days_between_purchases",
+    "purchase_frequency_monthly",
+    "unique_products",
+    "alcohol_purchase_ratio",
+    "private_label_purchase_ratio",
+    "growth_rate_last_3_months",
+    "count_above_1000"
+  ],
+  "metrics_holdout_ab": {
+    "qini": 0.0818225522877631,
+    "uplift_at_10": 0.09893155438290258,
+    "uplift_at_20": 0.07098837316933698,
+    "uplift_at_30": 0.05672624925080294,
+    "ate": 0.033249272281000275,
+    "response_auc": 0.7582317277097741,
+    "score_std": 0.03111781062957894
+  },
+  "sklearn_version": "1.9.0",
+  "dataset": "uplift/train.csv",
+  "n_rows": 200039,
+  "trained_at": "2026-07-28T12:24:06+00:00"
+}
