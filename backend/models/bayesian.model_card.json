@@ -1,0 +1,26 @@
+{
+  "name": "bayesian",
+  "task": "regression",
+  "target": "exp(Wage) = $/hr",
+  "estimator": "BayesianRidge + log-target",
+  "features": [
+    "School",
+    "Expert",
+    "Union",
+    "Married",
+    "Black"
+  ],
+  "metrics": {
+    "mape": 0.43579879291944573,
+    "median_ape": 0.2571439991264661,
+    "within_15pct": 0.29701834862385323,
+    "within_25pct": 0.48853211009174313,
+    "mae": 1.9792066910499353,
+    "n_train": 3488,
+    "n_test": 872
+  },
+  "sklearn_version": "1.9.0",
+  "dataset": "bayesian/train.csv",
+  "n_rows": 4360,
+  "trained_at": "2026-07-28T09:33:24+00:00"
+}

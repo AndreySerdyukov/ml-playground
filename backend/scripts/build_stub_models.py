@@ -83,25 +83,9 @@ MODELS: list[tuple[ModelInfo, StubPredictor]] = [
     # cars – РЕАЛЬНАЯ обученная модель, собирается отдельно в training/cars.py
     # (не стаб). Здесь запись убрана намеренно, чтобы стаб-фабрика не перетирала
     # backend/models/cars.joblib при перегенерации остальных заглушек.
-    (
-        ModelInfo(
-            name="bayesian",
-            task="regression",
-            target="wage",
-            target_unit="log $/hr",
-            category="Regression",
-            emoji="",
-            is_stub=True,
-            description="Bayesian wage model – predict hourly wage from experience and schooling",
-            features=[
-                num("Years", "Labour-market experience", 3, "yrs"),
-                num("School", "Years of schooling", 12, "yrs"),
-                cat("Union", "Union member", ["No", "Yes"], "No"),
-                cat("Married", "Married", ["No", "Yes"], "Yes"),
-            ],
-        ),
-        StubPredictor(task="regression", base=1.2, scale=0.05),
-    ),
+    # bayesian – РЕАЛЬНАЯ обученная модель, собирается отдельно в training/bayesian.py
+    # (не стаб). Здесь запись убрана намеренно, чтобы стаб-фабрика не перетирала
+    # backend/models/bayesian.joblib при перегенерации остальных заглушек.
     # loans – РЕАЛЬНАЯ обученная модель, собирается отдельно в training/loans.py
     # (не стаб). Здесь запись убрана намеренно, чтобы стаб-фабрика не перетирала
     # backend/models/loans.joblib при перегенерации остальных заглушек.

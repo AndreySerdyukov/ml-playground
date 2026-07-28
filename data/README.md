@@ -11,5 +11,8 @@ Training and test datasets, one folder per model. This is the source of truth fo
   - `train.csv` – labelled training data (`Target`: 1 approved / 0 rejected)
   - `test.csv` – unlabelled holdout (competition-style, no target)
   - `README.md` – column description
+- `bayesian/` – NLS wage panel (schooling, experience, union, …)
+  - `train.csv` – worker-year rows, `Wage` = log hourly wage (target)
+  - `README.md` – column description
 
 Note: `backend/models/*.joblib` are gitignored (rebuilt from this data via the training scripts).
