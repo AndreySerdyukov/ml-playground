@@ -4,13 +4,16 @@ Interactive web app to **run trained ML models in the browser** — pick a model
 get a prediction. A single super-app hosting several tabular models (wine quality, diamond & car
 price, wage, credit risk, uplift), with a clean Apple-inspired UI.
 
-> **Status:** web shell is live with an Apple-style UI and a model-agnostic form/result flow.
-> Model **weights are illustrative stubs** for now — the real trained models (from the source
-> notebooks) plug in next without touching the UI.
+> **Status:** live Apple-style web shell with a model-agnostic form/result flow. **Cars and Loans now
+> run on real trained weights** (Cars — gradient boosting; Loans — a stacked ensemble); the remaining
+> models are illustrative stubs for now and plug in the same way, without touching the UI. Light **and
+> dark** theme, **single and batch (CSV/Excel)** prediction.
 
 ## Stack
-- **Backend:** FastAPI, pydantic v2, joblib, pandas — layered (`api → services → repositories`).
-- **Frontend:** React + TypeScript (Vite, Tailwind, react-router), strict TS. Apple-style design.
+- **Backend:** FastAPI, pydantic v2, joblib, scikit-learn (pinned `~=1.9`), pandas — layered
+  (`api → services → repositories`). File uploads via `python-multipart`; `.xlsx` via `openpyxl`.
+- **Frontend:** React + TypeScript (Vite, Tailwind, react-router), strict TS. Apple-style design,
+  CSS-variable theming (light/dark).
 - **Infra:** Docker + docker-compose, pytest.
 
 ## How it works
@@ -19,17 +22,26 @@ The API exposes the catalog; the frontend **builds the input form automatically*
 feature spec and renders the result (number for regression, class + probabilities for classification).
 Swapping the stub estimator for a real trained one requires **no UI changes**.
 
+Real models are trained by `backend/training/<name>.py`, which reads `data/<name>/` and writes the
+artifact (+ a `*.model_card.json` with metrics/provenance). Cars and Loans use this today; the source
+research notebooks live in `notebooks/<name>/`.
+
 ```
-frontend (React) → api/ (routers) → services/ (inference) → repositories/ (model registry)
+frontend (React) → api/ (routers) → services/ (inference + file ingest) → repositories/ (model registry)
 ```
 Inference is stateless — no DB/Redis by design (`repositories/` is the data layer for artifacts).
+Beyond single prediction, `POST /predict-batch` runs a whole uploaded CSV/Excel through the model.
 
 ## Run locally
 ```bash
 # Backend
 cd backend
-uv venv --python 3.12 && uv pip install fastapi "uvicorn[standard]" pydantic pydantic-settings joblib scikit-learn pandas numpy pytest
-python scripts/build_stub_models.py        # generate the 6 demo model artifacts
+uv venv --python 3.12
+uv pip install fastapi "uvicorn[standard]" pydantic pydantic-settings joblib "scikit-learn~=1.9.0" \
+  pandas numpy python-multipart openpyxl pytest
+python scripts/build_stub_models.py        # 4 demo stub artifacts (cars & loans are real, see below)
+python training/cars.py                    # train the real Cars model from data/cars/ → cars.joblib
+python training/loans.py                   # train the real Loans model from data/loans/ → loans.joblib
 uv run uvicorn app.main:app --reload       # :8000
 
 # Frontend (another terminal)
@@ -42,15 +54,18 @@ npm install && npm run dev                 # :5173, /api proxied to :8000
 docker compose up --build                  # frontend :3000, backend :8000
 ```
 
-## Models (initial catalog)
-🍷 Wine (quality) · 💎 Diamonds (price) · 🚗 Cars (price) · 💵 Bayesian (wage) ·
-🏦 Loans (default risk) · 📈 Uplift (uplift score).
+## Models (catalog)
+Wine (quality) · Diamonds (price) · **Cars (price — real weights)** · Bayesian (wage) ·
+**Loans (credit approval — real weights)** · Uplift (uplift score).
 
 ## API
 - `GET /health` — liveness.
 - `GET /api/models` — catalog with per-model feature specs.
-- `POST /api/models/{name}/predict` — `{"features": {...}}` → prediction.
+- `POST /api/models/{name}/predict` — `{"features": {...}}` → single prediction.
+- `POST /api/models/{name}/predict-batch` — upload a CSV/Excel file, get a prediction per row.
 
 ## Roadmap
-- Replace stub predictors with real trained models (`training/` reproduces them from the notebooks).
-- Optional: dark mode, SHAP/feature-importance in the result card, more model types (CV/NLP).
+- Real trained models for the remaining stubs (`training/<name>.py` reproduces them from `data/`/`notebooks/`).
+- Decide `*.joblib` delivery (cars/loans, gitignored): rebuild on deploy from `data/`, commit, or Git LFS.
+- Optional: SHAP/feature-importance in the result card, more model types (CV/NLP).
+- Done: dark theme, single + batch prediction.
