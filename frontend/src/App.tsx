@@ -5,6 +5,17 @@ import { Home } from "./pages/Home";
 import { ModelPage } from "./pages/Model";
 import { fetchModels, type ModelInfo } from "./api";
 
+// Продуктовый порядок моделей в вебе (навбар + каталог), не алфавит из реестра. Неизвестные — в конец.
+const MODEL_ORDER = ["cars", "wine", "diamonds", "loans", "uplift", "bayesian"];
+
+function orderModels(models: ModelInfo[]): ModelInfo[] {
+  const rank = (name: string) => {
+    const i = MODEL_ORDER.indexOf(name);
+    return i === -1 ? MODEL_ORDER.length : i;
+  };
+  return [...models].sort((a, b) => rank(a.name) - rank(b.name));
+}
+
 // Корневой лэйаут: стеклянный топ-навбар + маршруты + футер.
 export default function App() {
   const [models, setModels] = useState<ModelInfo[]>([]);
@@ -13,7 +24,7 @@ export default function App() {
 
   useEffect(() => {
     fetchModels()
-      .then(setModels)
+      .then((ms) => setModels(orderModels(ms)))
       .catch((e) => setError(e instanceof Error ? e.message : String(e)))
       .finally(() => setLoading(false));
   }, []);
@@ -29,7 +40,7 @@ export default function App() {
       </main>
       <footer className="border-t border-hair bg-mist">
         <div className="mx-auto max-w-content px-6 py-8 text-xs text-slate">
-          ML Playground – interactive demos of trained models. Some weights are still illustrative stubs.
+          ML Playground – six trained ML models you can run in the browser, from notebook to prediction
         </div>
       </footer>
     </div>
