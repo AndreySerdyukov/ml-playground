@@ -5,6 +5,9 @@ prediction. One super-app hosting six tabular models behind a clean, Apple-inspi
 
 `FastAPI` · `React + TypeScript` · `scikit-learn` · model-agnostic forms · light/dark · single & batch
 
+> Sibling project: [DL Playground](https://github.com/AndreySerdyukov/dl-playground) – the same idea
+> rebuilt for PyTorch, serving image, text and tabular models behind one modality-driven UI.
+
 ---
 
 ## What it is
